@@ -5,6 +5,10 @@ application:
     packages:
       milo-fg:
         license: Apache-2.0
+        inputs:
+          fgSite: $FG_SITE
+          fgClientId: $FG_CLIENT_ID
+          fgAuthority: $FG_AUTHORITY
         actions:
           copy:
             function: actions/copy/copy.js
