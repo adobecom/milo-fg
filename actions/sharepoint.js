@@ -20,6 +20,7 @@ const fetch = require('node-fetch');
 const { getConfig } = require('./config');
 
 const BATCH_REQUEST_LIMIT = 20;
+const BATCH_DELAY_TIME = 200;
 
 // eslint-disable-next-line default-param-last
 function getAuthorizedRequestOption(spToken, { body = null, json = true, method = 'GET' } = {}) {
@@ -43,37 +44,32 @@ function getAuthorizedRequestOption(spToken, { body = null, json = true, method 
     return options;
 }
 
-const loadSharepointData = (spToken, spBatchApi, payload) => {
-    const options = getAuthorizedRequestOption(spToken, { method: 'POST' });
-    options.body = JSON.stringify(payload);
-    return fetch(spBatchApi, options);
-};
-
-function getSharepointFileRequest(spConfig, fileIndex, filePath, isFloodgate) {
-    const baseURI = isFloodgate ? spConfig.api.file.get.fgBaseURI : spConfig.api.file.get.baseURI;
-    return {
-        id: fileIndex,
-        url: `${baseURI}${filePath}`.replace(spConfig.api.url, ''),
-        method: 'GET',
-    };
+async function getFileData(spToken, adminPageUri, filePath, isFloodgate) {
+    const { sp } = await getConfig(adminPageUri);
+    const options = getAuthorizedRequestOption(spToken);
+    const baseURI = isFloodgate ? sp.api.directory.create.fgBaseURI : sp.api.directory.create.baseURI;
+    const resp = await fetch(`${baseURI}${filePath}`, options);
+    const json = await resp.json();
+    return json;
 }
 
-async function getSpFiles(spToken, adminPageUri, filePaths, isFloodgate) {
-    let index = 0;
-    const spFilePromises = [];
-    const { sp } = await getConfig(adminPageUri);
-    const spBatchApi = `${sp.api.batch.uri}`;
-
-    while (index < filePaths.length) {
-        const payload = { requests: [] };
-        for (let i = 0; i < BATCH_REQUEST_LIMIT && index < filePaths.length; index += 1, i += 1) {
-            const filePath = filePaths[index];
-            payload.requests.push(getSharepointFileRequest(sp, index, filePath, isFloodgate));
-        }
-        spFilePromises.push(loadSharepointData(spToken, spBatchApi, payload));
+async function getFilesData(spToken, adminPageUri, filePaths, isFloodgate) {
+    const batchArray = [];
+    for (let i = 0; i < filePaths.length; i += BATCH_REQUEST_LIMIT) {
+        const arrayChunk = filePaths.slice(i, i + BATCH_REQUEST_LIMIT);
+        batchArray.push(arrayChunk);
     }
-    const spFileResponses = await Promise.all(spFilePromises);
-    return Promise.all(spFileResponses.map((file) => file.json()));
+    // process data in batches
+    const fileJsonResp = [];
+    for (let i = 0; i < batchArray.length; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        fileJsonResp.push(...await Promise.all(
+            batchArray[i].map((file) => getFileData(spToken, adminPageUri, file, isFloodgate)),
+        ));
+        // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
+        await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_TIME));
+    }
+    return fileJsonResp;
 }
 
 async function getFile(doc) {
@@ -274,7 +270,7 @@ async function updateExcelTable(spToken, adminPageUri, excelPath, tableName, val
 
 module.exports = {
     getAuthorizedRequestOption,
-    getSpFiles,
+    getFilesData,
     getFile,
     copyFile,
     saveFile,
