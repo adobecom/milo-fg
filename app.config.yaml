@@ -41,5 +41,8 @@ application:
           test-input:
             function: actions/test-input/test.js
             web: 'yes'
+            annotations:
+              require-adobe-auth: true
+            runtime: nodejs:16
             inputs:
               LOG_LEVEL: debug
