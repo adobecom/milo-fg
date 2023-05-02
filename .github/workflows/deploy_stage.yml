@@ -49,12 +49,18 @@ jobs:
         env:
           AIO_RUNTIME_NAMESPACE: ${{ secrets.AIO_RUNTIME_NAMESPACE_STAGE }}
           AIO_RUNTIME_AUTH: ${{ secrets.AIO_RUNTIME_AUTH_STAGE }}
+<<<<<<< Updated upstream
           AIO_PROJECT_ID: ${{ secrets.AIO_PROJECT_ID_STAGE }}
           AIO_PROJECT_NAME: ${{ secrets.AIO_PROJECT_NAME_STAGE }}
           AIO_PROJECT_ORG_ID: ${{ secrets.AIO_PROJECT_ORG_ID_STAGE }}
           AIO_PROJECT_WORKSPACE_ID: ${{ secrets.AIO_PROJECT_WORKSPACE_ID_STAGE }}
           AIO_PROJECT_WORKSPACE_NAME: ${{ secrets.AIO_PROJECT_WORKSPACE_NAME_STAGE }}
           AIO_PROJECT_WORKSPACE_DETAILS_SERVICES: ${{ secrets.AIO_PROJECT_WORKSPACE_DETAILS_SERVICES_STAGE }}
+=======
+          FG_SITE: ${{ secrets.FG_SITE }}
+          FG_CLIENT_ID: ${{ secrets.FG_CLIENT_ID }}
+          FG_AUTHORITY: ${{ secrets.FG_AUTHORITY }}
+>>>>>>> Stashed changes
         uses: adobe/aio-apps-action@2.0.1
         with:
           os: ${{ matrix.os }}
