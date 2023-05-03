@@ -17,6 +17,7 @@
 
 const AioLogger = require('@adobe/aio-lib-core-logging');
 const fetch = require('node-fetch');
+const { fetchWithRetry } = require('./sharepoint');
 
 const MAX_RETRIES = 5;
 
@@ -91,7 +92,7 @@ function handleExtension(path) {
 }
 
 async function getFile(downloadUrl) {
-    const response = await fetch(downloadUrl);
+    const response = await fetchWithRetry(downloadUrl);
     if (response) {
         return response.blob();
     }

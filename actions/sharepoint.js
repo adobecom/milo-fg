@@ -78,7 +78,7 @@ async function getSpFiles(spToken, adminPageUri, filePaths, isFloodgate) {
 
 async function getFile(doc) {
     if (doc && doc.sp && doc.sp.status === 200) {
-        const response = await fetch(doc.sp['@microsoft.graph.downloadUrl']);
+        const response = await fetchWithRetry(doc.sp['@microsoft.graph.downloadUrl']);
         return response.blob();
     }
     return undefined;
@@ -86,13 +86,13 @@ async function getFile(doc) {
 
 async function createFolder(spToken, adminPageUri, folder, isFloodgate) {
     const { sp } = await getConfig(adminPageUri);
-
+    console.log("ran this");
     const options = getAuthorizedRequestOption(spToken, { method: sp.api.directory.create.method });
     options.body = JSON.stringify(sp.api.directory.create.payload);
 
     const baseURI = isFloodgate ? sp.api.directory.create.fgBaseURI : sp.api.directory.create.baseURI;
 
-    const res = await fetch(`${baseURI}${folder}`, options);
+    const res = await fetchWithRetry(`${baseURI}${folder}`, options);
     if (res.ok) {
         return res.json();
     }
@@ -122,7 +122,7 @@ async function createUploadSession(spToken, sp, file, dest, filename, isFloodgat
 
     const baseURI = isFloodgate ? sp.api.file.createUploadSession.fgBaseURI : sp.api.file.createUploadSession.baseURI;
 
-    const createdUploadSession = await fetch(`${baseURI}${dest}:/createUploadSession`, options);
+    const createdUploadSession = await fetchWithRetry(`${baseURI}${dest}:/createUploadSession`, options);
     return createdUploadSession.ok ? createdUploadSession.json() : undefined;
 }
 
@@ -136,7 +136,7 @@ async function uploadFile(spToken, sp, uploadUrl, file) {
     options.headers.append('Content-Range', `bytes 0-${file.size - 1}/${file.size}`);
     options.headers.append('Prefer', 'bypass-shared-lock');
     options.body = file;
-    return fetch(`${uploadUrl}`, options);
+    return fetchWithRetry(`${uploadUrl}`, options);
 }
 
 async function deleteFile(spToken, sp, filePath) {
@@ -206,13 +206,13 @@ async function copyFile(spToken, adminPageUri, srcPath, destinationFolder, newNa
     // In case of FG copy action triggered via saveFile(), locked file copy happens in the floodgate content location
     // So baseURI is updated to reflect the destination accordingly
     const contentURI = isFloodgate && isFloodgateLockedFile ? fgBaseURI : baseURI;
-    const copyStatusInfo = await fetch(`${contentURI}${srcPath}:/copy`, options);
+    const copyStatusInfo = await fetchWithRetry(`${contentURI}${srcPath}:/copy`, options);
     const statusUrl = copyStatusInfo.headers.get('Location');
     let copySuccess = false;
     let copyStatusJson = {};
     while (statusUrl && !copySuccess && copyStatusJson.status !== 'failed') {
         // eslint-disable-next-line no-await-in-loop
-        const status = await fetch(statusUrl);
+        const status = await fetchWithRetry(statusUrl);
         if (status.ok) {
             // eslint-disable-next-line no-await-in-loop
             copyStatusJson = await status.json();
@@ -272,6 +272,40 @@ async function updateExcelTable(spToken, adminPageUri, excelPath, tableName, val
     throw new Error(`Failed to update excel sheet ${excelPath} table ${tableName}.`);
 }
 
+// fetch-with-retry added to check for Sharepoint RateLimit headers and 429 errors and to handle them accordingly.
+let nextCallAfter = 0;
+const reqThresh = 5;
+const TOO_MANY_REQUESTS = '429';
+
+async function fetchWithRetry(apiUrl, options, retryCounts) {
+    let retryCount = retryCounts || 0;
+
+    return new Promise((resolve, reject) => {
+        const currentTime = Date.now();
+        if (retryCount > reqThresh) {
+            reject();
+        } else if (nextCallAfter !== 0 && currentTime < nextCallAfter) {
+            setTimeout(() => fetchWithRetry(apiUrl, options, retryCount)
+                .then((newResp) => resolve(newResp))
+                .catch((err) => reject(err)), nextCallAfter - currentTime);
+        } else {
+            retryCount += 1;
+            fetch(apiUrl, options).then((resp) => {
+                const retryAfter = resp.headers.get('ratelimit-reset') || resp.headers.get('retry-after') || 0;
+                if ((resp.headers.get('test-retry-status') === TOO_MANY_REQUESTS) || (resp.status === TOO_MANY_REQUESTS)) {
+                    nextCallAfter = Date.now() + retryAfter * 1000;
+                    fetchWithRetry(apiUrl, options, retryCount)
+                        .then((newResp) => resolve(newResp))
+                        .catch((err) => reject(err));
+                } else {
+                    nextCallAfter = retryAfter ? Math.max(Date.now() + retryAfter * 1000, nextCallAfter) : nextCallAfter;
+                    resolve(resp);
+                }
+            }).catch((err) => reject(err));
+        }
+    });
+}
+
 module.exports = {
     getAuthorizedRequestOption,
     getSpFiles,
@@ -280,4 +314,5 @@ module.exports = {
     saveFile,
     createFolder,
     updateExcelTable,
+    fetchWithRetry,
 };
