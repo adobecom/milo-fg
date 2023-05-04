@@ -20,6 +20,9 @@ const fetch = require('node-fetch');
 const { getConfig } = require('./config');
 
 const BATCH_REQUEST_LIMIT = 20;
+let nextCallAfter = 0;
+const NUM_REQ_THRESHOLD = 5;
+const TOO_MANY_REQUESTS = '429';
 
 // eslint-disable-next-line default-param-last
 function getAuthorizedRequestOption(spToken, { body = null, json = true, method = 'GET' } = {}) {
@@ -272,16 +275,12 @@ async function updateExcelTable(spToken, adminPageUri, excelPath, tableName, val
 }
 
 // fetch-with-retry added to check for Sharepoint RateLimit headers and 429 errors and to handle them accordingly.
-let nextCallAfter = 0;
-const reqThresh = 5;
-const TOO_MANY_REQUESTS = '429';
-
 async function fetchWithRetry(apiUrl, options, retryCounts) {
     let retryCount = retryCounts || 0;
 
     return new Promise((resolve, reject) => {
         const currentTime = Date.now();
-        if (retryCount > reqThresh) {
+        if (retryCount > NUM_REQ_THRESHOLD) {
             reject();
         } else if (nextCallAfter !== 0 && currentTime < nextCallAfter) {
             setTimeout(() => fetchWithRetry(apiUrl, options, retryCount)
