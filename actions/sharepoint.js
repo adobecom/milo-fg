@@ -86,7 +86,6 @@ async function getFile(doc) {
 
 async function createFolder(spToken, adminPageUri, folder, isFloodgate) {
     const { sp } = await getConfig(adminPageUri);
-    console.log("ran this");
     const options = getAuthorizedRequestOption(spToken, { method: sp.api.directory.create.method });
     options.body = JSON.stringify(sp.api.directory.create.payload);
 
