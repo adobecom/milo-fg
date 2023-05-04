@@ -10,7 +10,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        node-version: ['12']
+        node-version: ['16']
         os: [ubuntu-latest]
     steps:
       - name: Checkout
@@ -25,22 +25,10 @@ jobs:
         uses: adobe/aio-cli-setup-action@1.1.0
         with:
           os: ${{ matrix.os }}
-          version: 8.x.x
-      - name: Auth
-        uses: adobe/aio-apps-action@2.0.1
-        with:
-          os: ${{ matrix.os }}
-          command: auth
-          CLIENTID: ${{ secrets.CLIENTID_PROD }}
-          CLIENTSECRET: ${{ secrets.CLIENTSECRET_PROD }}
-          TECHNICALACCOUNTID: ${{ secrets.TECHNICALACCID_PROD }}
-          IMSORGID: ${{ secrets.IMSORGID_PROD }}
-          SCOPES: ${{ secrets.SCOPES_PROD }}
-          KEY: ${{ secrets.KEY_PROD }}
       - name: Build
         env:
           AIO_RUNTIME_NAMESPACE: ${{ secrets.AIO_RUNTIME_NAMESPACE_PROD }}
-        uses: adobe/aio-apps-action@2.0.1
+        uses: adobe/aio-apps-action@2.0.2
         with:
           os: ${{ matrix.os }}
           command: build
@@ -48,13 +36,11 @@ jobs:
         env:
           AIO_RUNTIME_NAMESPACE: ${{ secrets.AIO_RUNTIME_NAMESPACE_PROD }}
           AIO_RUNTIME_AUTH: ${{ secrets.AIO_RUNTIME_AUTH_PROD }}
-          AIO_PROJECT_ID: ${{ secrets.AIO_PROJECT_ID_PROD }}
-          AIO_PROJECT_NAME: ${{ secrets.AIO_PROJECT_NAME_PROD }}
-          AIO_PROJECT_ORG_ID: ${{ secrets.AIO_PROJECT_ORG_ID_PROD }}
-          AIO_PROJECT_WORKSPACE_ID: ${{ secrets.AIO_PROJECT_WORKSPACE_ID_PROD }}
-          AIO_PROJECT_WORKSPACE_NAME: ${{ secrets.AIO_PROJECT_WORKSPACE_NAME_PROD }}
-          AIO_PROJECT_WORKSPACE_DETAILS_SERVICES: ${{ secrets.AIO_PROJECT_WORKSPACE_DETAILS_SERVICES_PROD }}
-        uses: adobe/aio-apps-action@2.0.1
+          FG_SITE: ${{ secrets.FG_SITE }}
+          FG_CLIENT_ID: ${{ secrets.FG_CLIENT_ID }}
+          FG_AUTHORITY: ${{ secrets.FG_AUTHORITY }}
+        uses: adobe/aio-apps-action@2.0.2
         with:
           os: ${{ matrix.os }}
           command: deploy
+          noPublish: true

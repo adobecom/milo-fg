@@ -21,6 +21,9 @@ const {
 } = require('../sharepoint');
 const { getAioLogger, simulatePreview, handleExtension } = require('../utils');
 
+const BATCH_REQUEST_COPY = 20;
+const DELAY_TIME_COPY = 3000;
+
 async function main(params) {
     const logger = getAioLogger();
     let payload;
@@ -89,9 +92,24 @@ async function floodgateContent(spToken, adminPageUri, projectExcelPath, project
     }
 
     const startCopy = new Date();
-    const copyStatuses = await Promise.all(
-        [...projectDetail.urls].map((valueArray) => copyFilesToFloodgateTree(valueArray[1])),
-    );
+    // create batches to process the data
+    const contentToFloodgate = [...projectDetail.urls];
+    const batchArray = [];
+    for (let i = 0; i < contentToFloodgate.length; i += BATCH_REQUEST_COPY) {
+        const arrayChunk = contentToFloodgate.slice(i, i + BATCH_REQUEST_COPY);
+        batchArray.push(arrayChunk);
+    }
+
+    // process data in batches
+    const copyStatuses = [];
+    for (let i = 0; i < batchArray.length; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        copyStatuses.push(...await Promise.all(
+            batchArray[i].map((files) => copyFilesToFloodgateTree(files[1])),
+        ));
+        // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
+        await new Promise((resolve) => setTimeout(resolve, DELAY_TIME_COPY));
+    }
     const endCopy = new Date();
     logger.info('Completed floodgating documents listed in the project excel');
 

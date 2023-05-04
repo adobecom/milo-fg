@@ -12,6 +12,7 @@ dist
 config.json
 .env*
 .aio
+14257-milofg-*.json
 
 # Adobe I/O console config
 console.json

@@ -16,7 +16,7 @@
 ************************************************************************* */
 
 const fetch = require('node-fetch');
-const { getSpFiles } = require('./sharepoint');
+const { getFilesData } = require('./sharepoint');
 const {
     getAioLogger, getUrlInfo, handleExtension, getFloodgateUrl, getDocPathFromUrl
 } = require('./utils');
@@ -65,25 +65,27 @@ async function readProjectFile(projectWebUrl) {
 /**
  * Makes the sharepoint file data part of `projectDetail` per URL.
  */
-function injectSharepointData(projectUrls, filePaths, docPaths, spBatchFiles, isFloodgate) {
-    spBatchFiles.forEach((spFiles) => {
-        if (!spFiles || !spFiles.responses) return;
-        spFiles.responses.forEach(({ id, status, body }) => {
-            const filePath = docPaths[id];
-            const fileBody = status === 200 ? body : {};
-            const urls = filePaths.get(filePath);
-            urls.forEach((key) => {
-                const urlObjVal = projectUrls.get(key);
-                if (isFloodgate) {
-                    urlObjVal.doc.fg.sp = fileBody;
-                    urlObjVal.doc.fg.sp.status = status;
-                } else {
-                    urlObjVal.doc.sp = fileBody;
-                    urlObjVal.doc.sp.status = status;
-                }
-            });
+function injectSharepointData(projectUrls, filePaths, docPaths, spFiles, isFloodgate) {
+    for (let i = 0; i < spFiles.length; i += 1) {
+        let fileBody = {};
+        let status = 404;
+        if (!spFiles[i].error) {
+            fileBody = spFiles[i];
+            status = 200;
+        }
+        const filePath = docPaths[i];
+        const urls = filePaths.get(filePath);
+        urls.forEach((key) => {
+            const urlObjVal = projectUrls.get(key);
+            if (isFloodgate) {
+                urlObjVal.doc.fg.sp = fileBody;
+                urlObjVal.doc.fg.sp.status = status;
+            } else {
+                urlObjVal.doc.sp = fileBody;
+                urlObjVal.doc.sp.status = status;
+            }
         });
-    });
+    }
 }
 
 async function updateProjectWithDocs(spToken, adminPageUri, projectDetail) {
@@ -94,10 +96,10 @@ async function updateProjectWithDocs(spToken, adminPageUri, projectDetail) {
     }
     const { filePaths } = projectDetail;
     const docPaths = [...filePaths.keys()];
-    const spBatchFiles = await getSpFiles(spToken, adminPageUri, docPaths);
-    injectSharepointData(projectDetail.urls, filePaths, docPaths, spBatchFiles);
-    const fgSpBatchFiles = await getSpFiles(spToken, adminPageUri, docPaths, true);
-    injectSharepointData(projectDetail.urls, filePaths, docPaths, fgSpBatchFiles, true);
+    const spFiles = await getFilesData(spToken, adminPageUri, docPaths);
+    injectSharepointData(projectDetail.urls, filePaths, docPaths, spFiles);
+    const fgSpFiles = await getFilesData(spToken, adminPageUri, docPaths, true);
+    injectSharepointData(projectDetail.urls, filePaths, docPaths, fgSpFiles, true);
 }
 
 module.exports = {

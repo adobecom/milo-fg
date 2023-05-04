@@ -24,6 +24,10 @@ const {
     getAioLogger, simulatePreview, handleExtension, getFile
 } = require('../utils');
 
+const BATCH_REQUEST_PROMOTE = 20;
+const DELAY_TIME_PROMOTE = 3000;
+const MAX_CHILDREN = 1000;
+
 async function main(params) {
     const logger = getAioLogger();
     let payload;
@@ -63,7 +67,7 @@ async function findAllFiles(spToken, adminPageUri) {
  */
 async function findAllFloodgatedFiles(baseURI, options, rootFolder, fgFiles, fgFolders) {
     while (fgFolders.length !== 0) {
-        const uri = `${baseURI}${fgFolders.shift()}:/children`;
+        const uri = `${baseURI}${fgFolders.shift()}:/children?$top=${MAX_CHILDREN}`;
         // eslint-disable-next-line no-await-in-loop
         const res = await fetch(uri, options);
         if (res.ok) {
@@ -157,9 +161,23 @@ async function promoteFloodgatedFiles(spToken, adminPageUri, projectExcelPath) {
     const startPromote = new Date();
     // Iterate the floodgate tree and get all files to promote
     const allFloodgatedFiles = await findAllFiles(spToken, adminPageUri);
-    const promoteStatuses = await Promise.all(
-        allFloodgatedFiles.map((file) => promoteFile(file.fileDownloadUrl, file.filePath)),
-    );
+    // create batches to process the data
+    const batchArray = [];
+    for (let i = 0; i < allFloodgatedFiles.length; i += BATCH_REQUEST_PROMOTE) {
+        const arrayChunk = allFloodgatedFiles.slice(i, i + BATCH_REQUEST_PROMOTE);
+        batchArray.push(arrayChunk);
+    }
+
+    // process data in batches
+    const promoteStatuses = [];
+    for (let i = 0; i < batchArray.length; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        promoteStatuses.push(...await Promise.all(
+            batchArray[i].map((file) => promoteFile(file.fileDownloadUrl, file.filePath)),
+        ));
+        // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
+        await new Promise((resolve) => setTimeout(resolve, DELAY_TIME_PROMOTE));
+    }
     const endPromote = new Date();
     logger.info('Completed promoting all documents in the pink folder');
 
