@@ -40,7 +40,7 @@ jobs:
           FG_SITE: ${{ secrets.FG_SITE }}
           FG_CLIENT_ID: ${{ secrets.FG_CLIENT_ID }}
           FG_AUTHORITY: ${{ secrets.FG_AUTHORITY }}
-        uses: adobe/aio-apps-action@2.0.1
+        uses: adobe/aio-apps-action@2.0.2
         with:
           os: ${{ matrix.os }}
           command: deploy
