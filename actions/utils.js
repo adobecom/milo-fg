@@ -17,7 +17,6 @@
 
 const AioLogger = require('@adobe/aio-lib-core-logging');
 const fetch = require('node-fetch');
-const { fetchWithRetry } = require('./sharepoint');
 
 const MAX_RETRIES = 5;
 
@@ -91,14 +90,6 @@ function handleExtension(path) {
     return path.substring(0, path.lastIndexOf('.'));
 }
 
-async function getFile(downloadUrl) {
-    const response = await fetchWithRetry(downloadUrl);
-    if (response) {
-        return response.blob();
-    }
-    return undefined;
-}
-
 function getPathFromUrl(url) {
     return new URL(url).pathname;
 }
@@ -128,6 +119,5 @@ module.exports = {
     getFloodgateUrl,
     simulatePreview,
     handleExtension,
-    getFile,
     getDocPathFromUrl
 };

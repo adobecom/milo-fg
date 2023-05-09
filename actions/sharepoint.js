@@ -83,6 +83,14 @@ async function getFile(doc) {
     return undefined;
 }
 
+async function getFileUsingDownloadUrl(downloadUrl) {
+    const response = await fetchWithRetry(downloadUrl);
+    if (response) {
+        return response.blob();
+    }
+    return undefined;
+}
+
 async function createFolder(spToken, adminPageUri, folder, isFloodgate) {
     const { sp } = await getConfig(adminPageUri);
     const options = getAuthorizedRequestOption(spToken, { method: sp.api.directory.create.method });
@@ -304,6 +312,7 @@ module.exports = {
     getAuthorizedRequestOption,
     getFilesData,
     getFile,
+    getFileUsingDownloadUrl,
     copyFile,
     saveFile,
     createFolder,
