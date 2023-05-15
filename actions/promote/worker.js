@@ -23,6 +23,7 @@ const {
 const {
     getAioLogger, simulatePreview, handleExtension, updateStatusToStateLib, PROMOTE_ACTION
 } = require('../utils');
+const appConfig = require('../appConfig');
 
 const BATCH_REQUEST_PROMOTE = 20;
 const DELAY_TIME_PROMOTE = 3000;
@@ -30,6 +31,7 @@ const MAX_CHILDREN = 1000;
 
 async function main(params) {
     const logger = getAioLogger();
+    appConfig.setAppConfig(params);
     let payload;
     const {
         spToken, adminPageUri, projectExcelPath, projectRoot

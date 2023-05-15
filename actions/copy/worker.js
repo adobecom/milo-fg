@@ -22,12 +22,14 @@ const {
 const {
     getAioLogger, simulatePreview, handleExtension, updateStatusToStateLib, COPY_ACTION
 } = require('../utils');
+const appConfig = require('../appConfig');
 
 const BATCH_REQUEST_COPY = 20;
 const DELAY_TIME_COPY = 3000;
 
 async function main(params) {
     const logger = getAioLogger();
+    appConfig.setAppConfig(params);
     let payload;
     const {
         spToken, adminPageUri, projectExcelPath, projectRoot

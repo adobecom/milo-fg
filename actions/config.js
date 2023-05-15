@@ -15,34 +15,31 @@
 * from Adobe.
 ************************************************************************* */
 
-const fetch = require('node-fetch');
-const { getUrlInfo, getAioLogger } = require('./utils');
+const { getUrlInfo } = require('./utils');
+const appConfig = require('./appConfig');
 
-const FLOODGATE_CONFIG = '/drafts/floodgate/configs/config.json';
 const GRAPH_API = 'https://graph.microsoft.com/v1.0';
 
-function getSharepointConfig(config) {
-    const sharepointConfig = config.sp.data[0];
-    // ${sharepointConfig.site} - MS Graph API Url with site pointers.
-    const baseURI = `${sharepointConfig.site}/drive/root:${sharepointConfig.rootFolders}`;
-    const fgBaseURI = `${sharepointConfig.site}/drive/root:${sharepointConfig.fgRootFolder}`;
+function getSharepointConfig(applicationConfig) {
+    const baseURI = `${applicationConfig.fgSite}/drive/root:${applicationConfig.rootFolder}`;
+    const fgBaseURI = `${applicationConfig.fgSite}/drive/root:${applicationConfig.fgRootFolder}`;
     return {
-        ...sharepointConfig,
+        ...applicationConfig,
         clientApp: {
             auth: {
-                clientId: sharepointConfig.clientId,
-                authority: sharepointConfig.authority,
+                clientId: applicationConfig.fgClientId,
+                authority: applicationConfig.fgAuthority,
             },
             cache: { cacheLocation: 'sessionStorage' },
         },
-        shareUrl: sharepointConfig.shareurl,
-        fgShareUrl: sharepointConfig.fgShareUrl,
+        shareUrl: applicationConfig.shareurl,
+        fgShareUrl: applicationConfig.fgShareUrl,
         login: { redirectUri: '/tools/loc/spauth' },
         api: {
             url: GRAPH_API,
             file: {
                 get: { baseURI, fgBaseURI },
-                download: { baseURI: `${sharepointConfig.site}/drive/items` },
+                download: { baseURI: `${applicationConfig.fgSite}/drive/items` },
                 upload: {
                     baseURI,
                     fgBaseURI,
@@ -91,15 +88,6 @@ function getSharepointConfig(config) {
     };
 }
 
-async function fetchConfigJson(configPath) {
-    const logger = getAioLogger();
-    const configResponse = await fetch(configPath);
-    if (!configResponse.ok) {
-        logger.error('Config not found');
-    }
-    return configResponse.json();
-}
-
 function getHelixAdminConfig() {
     const adminServerURL = 'https://admin.hlx.page';
     return {
@@ -113,10 +101,9 @@ function getHelixAdminConfig() {
 async function getConfig(adminPageUri) {
     const urlInfo = getUrlInfo(adminPageUri);
     if (urlInfo.isValid()) {
-        const configPath = `${urlInfo.origin}${FLOODGATE_CONFIG}`;
-        const configJson = await fetchConfigJson(configPath);
+        const applicationConfig = appConfig.getConfig();
         return {
-            sp: getSharepointConfig(configJson),
+            sp: getSharepointConfig(applicationConfig),
             admin: getHelixAdminConfig(),
         };
     }
