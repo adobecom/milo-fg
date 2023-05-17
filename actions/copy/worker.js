@@ -20,7 +20,7 @@ const {
     updateExcelTable, getFile, saveFile, copyFile
 } = require('../sharepoint');
 const {
-    getAioLogger, simulatePreview, handleExtension, updateStatusToStateLib, COPY_ACTION
+    getAioLogger, simulatePreview, handleExtension, updateStatusToStateLib, COPY_ACTION, delay
 } = require('../utils');
 const appConfig = require('../appConfig');
 
@@ -130,16 +130,22 @@ async function floodgateContent(spToken, adminPageUri, projectExcelPath, project
             batchArray[i].map((files) => copyFilesToFloodgateTree(files[1])),
         ));
         // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
-        await new Promise((resolve) => setTimeout(resolve, DELAY_TIME_COPY));
+        await delay(DELAY_TIME_COPY);
     }
     const endCopy = new Date();
     logger.info('Completed floodgating documents listed in the project excel');
 
-    const previewStatuses = await Promise.all(
-        copyStatuses
-            .filter((status) => status.success)
-            .map((status) => simulatePreview(handleExtension(status.srcPath), 1, true, adminPageUri)),
-    );
+    logger.info('Previewing floodgated files... ');
+    const previewStatuses = [];
+    for (let i = 0; i < copyStatuses.length; i += 1) {
+        if (copyStatuses[i].success) {
+            // eslint-disable-next-line no-await-in-loop
+            const result = await simulatePreview(handleExtension(copyStatuses[i].srcPath), 1, true);
+            previewStatuses.push(result);
+        }
+        // eslint-disable-next-line no-await-in-loop
+        await delay();
+    }
     logger.info('Completed generating Preview for floodgated files.');
 
     const failedCopies = copyStatuses.filter((status) => !status.success)

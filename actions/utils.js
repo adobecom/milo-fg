@@ -196,6 +196,11 @@ async function getStatusFromStateLib(storeKey) {
     return status;
 }
 
+async function delay(milliseconds = 100) {
+    // eslint-disable-next-line no-promise-executor-return
+    await new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 module.exports = {
     getAioLogger,
     getUrlInfo,
@@ -205,6 +210,7 @@ module.exports = {
     getDocPathFromUrl,
     updateStatusToStateLib,
     getStatusFromStateLib,
+    delay,
     COPY_ACTION,
     PROMOTE_ACTION
 };

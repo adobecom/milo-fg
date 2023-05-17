@@ -21,7 +21,7 @@ const {
     getAuthorizedRequestOption, createFolder, saveFile, updateExcelTable, getFileUsingDownloadUrl, fetchWithRetry
 } = require('../sharepoint');
 const {
-    getAioLogger, simulatePreview, handleExtension, updateStatusToStateLib, PROMOTE_ACTION
+    getAioLogger, simulatePreview, handleExtension, updateStatusToStateLib, PROMOTE_ACTION, delay
 } = require('../utils');
 const appConfig = require('../appConfig');
 
@@ -190,17 +190,22 @@ async function promoteFloodgatedFiles(spToken, adminPageUri, projectExcelPath) {
             batchArray[i].map((file) => promoteFile(file.fileDownloadUrl, file.filePath)),
         ));
         // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
-        await new Promise((resolve) => setTimeout(resolve, DELAY_TIME_PROMOTE));
+        await delay(DELAY_TIME_PROMOTE);
     }
     const endPromote = new Date();
     logger.info('Completed promoting all documents in the pink folder');
 
     logger.info('Previewing promoted files.');
-    const previewStatuses = await Promise.all(
-        promoteStatuses
-            .filter((status) => status.success)
-            .map((status) => simulatePreview(handleExtension(status.srcPath), 1, false, adminPageUri)),
-    );
+    const previewStatuses = [];
+    for (let i = 0; i < promoteStatuses.length; i += 1) {
+        if (promoteStatuses[i].success) {
+            // eslint-disable-next-line no-await-in-loop
+            const result = await simulatePreview(handleExtension(promoteStatuses[i].srcPath), 1, true);
+            previewStatuses.push(result);
+        }
+        // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
+        await delay();
+    }
     logger.info('Completed generating Preview for promoted files.');
 
     const failedPromotes = promoteStatuses.filter((status) => !status.success)
