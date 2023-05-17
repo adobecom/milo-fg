@@ -41,7 +41,7 @@ async function main(params) {
             logger.error(payload);
         } else if (!spToken || !adminPageUri) {
             payload = 'Required data is not available to proceed with FG Copy action.';
-            updateStatusToStateLib(projectPath, PROJECT_STATUS.COMPLETED_WITH_ERROR, payload, undefined, COPY_ACTION);
+            updateStatusToStateLib(projectPath, PROJECT_STATUS.FAILED, payload, undefined, COPY_ACTION);
             logger.error(payload);
         } else {
             projectPath = `${projectRoot}${projectExcelPath}`;
@@ -52,12 +52,12 @@ async function main(params) {
             const projectDetail = await getProjectDetails(adminPageUri, projectExcelPath);
 
             payload = 'Injecting sharepoint data';
-            logger.info('Injecting sharepoint data');
+            logger.info(payload);
             updateStatusToStateLib(projectPath, PROJECT_STATUS.IN_PROGRESS, payload, undefined, COPY_ACTION);
             await updateProjectWithDocs(spToken, adminPageUri, projectDetail);
 
             payload = 'Start floodgating content';
-            logger.info('Start floodgating content');
+            logger.info(payload);
             updateStatusToStateLib(projectPath, PROJECT_STATUS.IN_PROGRESS, payload, undefined, COPY_ACTION);
             payload = await floodgateContent(spToken, adminPageUri, projectExcelPath, projectDetail);
 

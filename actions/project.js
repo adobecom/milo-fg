@@ -25,7 +25,8 @@ const PROJECT_STATUS = {
     NOT_STARTED: 'NOT STARTED',
     COMPLETED: 'COMPLETED',
     COMPLETED_WITH_ERROR: 'COMPLETED WITH ERROR',
-    IN_PROGRESS: 'IN PROGRESS'
+    IN_PROGRESS: 'IN PROGRESS',
+    FAILED: 'FAILED'
 };
 
 async function getProjectDetails(adminPageUri, projectExcelPath) {

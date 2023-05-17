@@ -42,7 +42,7 @@ async function main(params) {
             logger.error(payload);
         } else if (!spToken || !adminPageUri || !projectExcelPath) {
             payload = 'Required data is not available to proceed with FG Promote action.';
-            updateStatusToStateLib(projectRoot, PROJECT_STATUS.COMPLETED_WITH_ERROR, payload, undefined, PROMOTE_ACTION);
+            updateStatusToStateLib(projectRoot, PROJECT_STATUS.FAILED, payload, undefined, PROMOTE_ACTION);
             logger.error(payload);
         } else {
             payload = 'Getting all files to be promoted';
