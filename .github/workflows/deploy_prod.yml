@@ -39,6 +39,13 @@ jobs:
           FG_SITE: ${{ secrets.FG_SITE }}
           FG_CLIENT_ID: ${{ secrets.FG_CLIENT_ID }}
           FG_AUTHORITY: ${{ secrets.FG_AUTHORITY }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          TENANT_ID: ${{ secrets.TENANT_ID }}
+          DRIVE_ID: ${{ secrets.DRIVE_ID }}
+          CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+          CERT_KEY: ${{ secrets.CERT_KEY }}
+          CERT_THUMB_PRINT: ${{ secrets.CERT_THUMB_PRINT }}
+          SPLUNK_HEC__HEC_TOKEN: ${{ secrets.SPLUNK_HEC_TOKEN_PROD }}
         uses: adobe/aio-apps-action@2.0.2
         with:
           os: ${{ matrix.os }}
