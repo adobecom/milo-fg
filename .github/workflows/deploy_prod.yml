@@ -41,7 +41,6 @@ jobs:
           FG_AUTHORITY: ${{ secrets.FG_AUTHORITY }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           TENANT_ID: ${{ secrets.TENANT_ID }}
-          DRIVE_ID: ${{ secrets.DRIVE_ID }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
           CERT_KEY: ${{ secrets.CERT_KEY }}
           CERT_THUMB_PRINT: ${{ secrets.CERT_THUMB_PRINT }}
