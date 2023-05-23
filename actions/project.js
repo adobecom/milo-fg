@@ -22,6 +22,7 @@ const {
 } = require('./utils');
 
 const PROJECT_STATUS = {
+    STARTED: 'STARTED',
     NOT_STARTED: 'NOT STARTED',
     COMPLETED: 'COMPLETED',
     COMPLETED_WITH_ERROR: 'COMPLETED WITH ERROR',

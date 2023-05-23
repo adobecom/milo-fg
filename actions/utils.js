@@ -38,7 +38,6 @@ function getAioLogger(loggerName = 'main', logLevel = 'info') {
 }
 
 function getUrlInfo(adminPageUri) {
-    const logger = getAioLogger();
     const location = new URL(adminPageUri);
     function getParam(name) {
         return location.searchParams.get(name);
@@ -50,8 +49,6 @@ function getUrlInfo(adminPageUri) {
     const owner = getParam('owner') || sub[1];
     const repo = getParam('repo') || sub[0];
     const ref = getParam('ref') || 'main';
-
-    logger.info(`sp:: ${sp} :: owner :: ${owner} :: repo :: ${repo} :: ref :: ${ref}`);
 
     const urlInfo = {
         sp,
@@ -128,23 +125,23 @@ function getDocPathFromUrl(url) {
 
 async function updateStatusToStateLib(storeKey, status, statusMessage, activationId, action) {
     const logger = getAioLogger();
+    let storeStatus = STATUS_FORMAT;
     try {
-        getStatusFromStateLib(storeKey).then((result) => {
+        await getStatusFromStateLib(storeKey).then((result) => {
             if (result?.action) {
-                const storeValue = result;
+                storeStatus = result;
                 if (status) {
-                    storeValue.action.status = status;
+                    storeStatus.action.status = status;
                 }
                 if (statusMessage) {
-                    storeValue.action.message = statusMessage;
+                    storeStatus.action.message = statusMessage;
                 }
                 if (activationId) {
-                    storeValue.action.activationId = activationId;
+                    storeStatus.action.activationId = activationId;
                 }
-                logger.info(`Updating status to state store  -- value :   ${JSON.stringify(storeValue)}`);
-                updateStateStatus(storeKey, storeValue);
+                logger.info(`Updating status to state store  -- value :   ${JSON.stringify(storeStatus)}`);
+                updateStateStatus(storeKey, storeStatus);
             } else {
-                const storeStatus = STATUS_FORMAT;
                 logger.info(`Updating status to state store  -- value :   ${JSON.stringify(storeStatus)}`);
                 storeStatus.action.type = action;
                 storeStatus.action.status = status;
@@ -156,6 +153,7 @@ async function updateStatusToStateLib(storeKey, status, statusMessage, activatio
     } catch (err) {
         logger.error(`Error creating state store ${err}`);
     }
+    return storeStatus;
 }
 
 async function updateStateStatus(storeKey, storeValue) {

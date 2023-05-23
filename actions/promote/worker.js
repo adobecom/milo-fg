@@ -46,10 +46,9 @@ async function main(params) {
             updateStatusToStateLib(projectRoot, PROJECT_STATUS.FAILED, payload, undefined, PROMOTE_ACTION);
             logger.error(payload);
         } else {
-            payload = 'Getting all files to be promoted';
+            payload = 'Getting all files to be promoted.';
             updateStatusToStateLib(projectRoot, PROJECT_STATUS.IN_PROGRESS, payload, undefined, PROMOTE_ACTION);
             logger.info(payload);
-
             payload = await promoteFloodgatedFiles(adminPageUri, projectExcelPath);
             updateStatusToStateLib(projectRoot, PROJECT_STATUS.COMPLETED, payload, undefined, PROMOTE_ACTION);
         }
@@ -165,7 +164,7 @@ async function promoteFloodgatedFiles(adminPageUri, projectExcelPath) {
     }
 
     const startPromote = new Date();
-    let payload = 'Getting all floodgated files to promote';
+    let payload = 'Getting all floodgated files to promote.';
     // Iterate the floodgate tree and get all files to promote
     const allFloodgatedFiles = await findAllFiles(adminPageUri);
     // create batches to process the data

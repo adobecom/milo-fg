@@ -38,51 +38,57 @@ async function main(args) {
             logger.error(payload);
         } else if (!adminPageUri) {
             payload = 'Required data is not available to proceed with FG Promote action.';
-            updateStatusToStateLib(projectPath, PROJECT_STATUS.FAILED, payload, '', COPY_ACTION);
             logger.error(payload);
+            payload = await updateStatusToStateLib(projectPath, PROJECT_STATUS.FAILED, payload, undefined, COPY_ACTION);
         } else {
             const storeValue = await getStatusFromStateLib(projectPath);
             if (!appConfig.getSkipInProgressCheck() &&
-                storeValue?.action?.status === PROJECT_STATUS.IN_PROGRESS) {
-                payload = 'A copy action project is already in progress.';
-                logger.error(payload);
+                (storeValue?.action?.status === PROJECT_STATUS.IN_PROGRESS ||
+                storeValue?.action?.status === PROJECT_STATUS.STARTED)) {
+                payload = `A copy action project with activationid: ${storeValue?.action?.activationId} is already in progress. 
+                Not triggering this action. And the previous action can be retrieved by refreshing the console page`;
+                storeValue.action.status = PROJECT_STATUS.FAILED;
+                storeValue.action.message = payload;
+                payload = storeValue;
             } else {
-                await updateStatusToStateLib(projectPath, PROJECT_STATUS.IN_PROGRESS, 'Triggering copy action', '', COPY_ACTION);
+                payload = await updateStatusToStateLib(projectPath, PROJECT_STATUS.STARTED, 'Triggering copy action', '', COPY_ACTION);
                 const ow = openwhisk();
                 return ow.actions.invoke({
                     name: 'milo-fg/copy-worker',
                     blocking: false, // this is the flag that instructs to execute the worker asynchronous
                     result: false,
                     params: args
-                }).then((result) => {
+                }).then(async (result) => {
                     logger.info(result);
                     //  attaching activation id to the status
-                    updateStatusToStateLib(projectPath, PROJECT_STATUS.IN_PROGRESS, undefined, result.activationId, COPY_ACTION);
+                    payload = await updateStatusToStateLib(projectPath, PROJECT_STATUS.IN_PROGRESS, undefined, result.activationId, COPY_ACTION);
                     return {
                         code: 200,
-                        body: { Success: result },
+                        payload
                     };
-                }).catch((err) => {
-                    updateStatusToStateLib(projectPath, PROJECT_STATUS.FAILED, `Failed to invoke actions ${err.message}`, undefined, COPY_ACTION);
+                }).catch(async (err) => {
+                    payload = await updateStatusToStateLib(projectPath, PROJECT_STATUS.FAILED, `Failed to invoke actions ${err.message}`, undefined, COPY_ACTION);
                     logger.error('Failed to invoke actions', err);
                     return {
                         code: 500,
-                        body: { Error: err }
+                        payload
                     };
                 });
             }
             return {
                 code: 500,
-                body: { Error: payload },
+                payload
             };
         }
     } catch (err) {
-        updateStatusToStateLib(projectPath, PROJECT_STATUS.FAILED, `Failed to invoke actions ${err.message}`, undefined, COPY_ACTION);
+        payload = updateStatusToStateLib(projectPath, PROJECT_STATUS.FAILED, `Failed to invoke actions ${err.message}`, undefined, COPY_ACTION);
         logger.error(err);
-        payload = err;
     }
 
-    return { payload };
+    return {
+        code: 500,
+        payload,
+    };
 }
 
 exports.main = main;
