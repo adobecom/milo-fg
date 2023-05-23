@@ -18,7 +18,7 @@
 const { getConfig } = require('../config');
 const { PROJECT_STATUS } = require('../project');
 const {
-    getAuthorizedRequestOption, createFolder, saveFile, updateExcelTable, getFileUsingDownloadUrl, fetchWithRetry
+    getAuthorizedRequestOption, saveFile, updateExcelTable, getFileUsingDownloadUrl, fetchWithRetry
 } = require('../sharepoint');
 const {
     getAioLogger, simulatePreview, handleExtension, updateStatusToStateLib, PROMOTE_ACTION, delay
@@ -109,18 +109,17 @@ async function findAllFloodgatedFiles(baseURI, options, rootFolder, fgFiles, fgF
  * Creates intermediate folders if needed.
  */
 async function promoteCopy(adminPageUri, srcPath, destinationFolder) {
-    await createFolder(adminPageUri, destinationFolder);
     const { sp } = await getConfig(adminPageUri);
-    const destRootFolder = `${sp.api.file.copy.baseURI}`.split('/').pop();
-
-    const payload = { ...sp.api.file.copy.payload, parentReference: { path: `${destRootFolder}${destinationFolder}` } };
+    const { baseURI } = sp.api.file.copy;
+    const rootFolder = baseURI.split('/').pop();
+    const payload = { ...sp.api.file.copy.payload, parentReference: { path: `${rootFolder}${destinationFolder}` } };
     const options = await getAuthorizedRequestOption({
         method: sp.api.file.copy.method,
         body: JSON.stringify(payload),
     });
 
     // copy source is the pink directory for promote
-    const copyStatusInfo = await fetchWithRetry(`${sp.api.file.copy.fgBaseURI}${srcPath}:/copy`, options);
+    const copyStatusInfo = await fetchWithRetry(`${sp.api.file.copy.fgBaseURI}${srcPath}:/copy?@microsoft.graph.conflictBehavior=replace`, options);
     const statusUrl = copyStatusInfo.headers.get('Location');
     let copySuccess = false;
     let copyStatusJson = {};
@@ -144,25 +143,16 @@ async function promoteFloodgatedFiles(adminPageUri, projectExcelPath) {
         try {
             let promoteSuccess = false;
             logger.info(`Promoting ${filePath}`);
-            const { sp } = await getConfig(adminPageUri);
-            const options = await getAuthorizedRequestOption();
-            const res = await fetchWithRetry(`${sp.api.file.get.baseURI}${filePath}`, options);
-            if (res.ok) {
-                // File exists at the destination (main content tree)
-                // Get the file in the pink directory using downloadUrl
-                const file = await getFileUsingDownloadUrl(downloadUrl);
-                if (file) {
-                    // Save the file in the main content tree
-                    const saveStatus = await saveFile(adminPageUri, file, filePath);
-                    if (saveStatus.success) {
-                        promoteSuccess = true;
-                    }
-                }
+            const destinationFolder = `${filePath.substring(0, filePath.lastIndexOf('/'))}`;
+            const copyFileStatus = await promoteCopy(adminPageUri, filePath, destinationFolder);
+            if (copyFileStatus) {
+                promoteSuccess = true;
             } else {
-                // File does not exist at the destination (main content tree)
-                // File can be copied directly
-                const destinationFolder = `${filePath.substring(0, filePath.lastIndexOf('/'))}`;
-                promoteSuccess = await promoteCopy(adminPageUri, filePath, destinationFolder);
+                const file = await getFileUsingDownloadUrl(downloadUrl);
+                const saveStatus = await saveFile(adminPageUri, file, filePath);
+                if (saveStatus.success) {
+                    promoteSuccess = true;
+                }
             }
             status.success = promoteSuccess;
             status.srcPath = filePath;

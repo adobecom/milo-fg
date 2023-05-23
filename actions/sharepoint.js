@@ -203,10 +203,8 @@ async function createSessionAndUploadFile(sp, file, dest, filename, isFloodgate)
 }
 
 async function copyFile(adminPageUri, srcPath, destinationFolder, newName, isFloodgate, isFloodgateLockedFile) {
-    await createFolder(adminPageUri, destinationFolder, isFloodgate);
     const { sp } = await getConfig(adminPageUri);
-    const { baseURI } = sp.api.file.copy;
-    const { fgBaseURI } = sp.api.file.copy;
+    const { baseURI, fgBaseURI } = sp.api.file.copy;
     const rootFolder = isFloodgate ? fgBaseURI.split('/').pop() : baseURI.split('/').pop();
 
     const payload = { ...sp.api.file.copy.payload, parentReference: { path: `${rootFolder}${destinationFolder}` } };
@@ -220,7 +218,7 @@ async function copyFile(adminPageUri, srcPath, destinationFolder, newName, isFlo
     // In case of FG copy action triggered via saveFile(), locked file copy happens in the floodgate content location
     // So baseURI is updated to reflect the destination accordingly
     const contentURI = isFloodgate && isFloodgateLockedFile ? fgBaseURI : baseURI;
-    const copyStatusInfo = await fetchWithRetry(`${contentURI}${srcPath}:/copy`, options);
+    const copyStatusInfo = await fetchWithRetry(`${contentURI}${srcPath}:/copy?@microsoft.graph.conflictBehavior=replace`, options);
     const statusUrl = copyStatusInfo.headers.get('Location');
     let copySuccess = false;
     let copyStatusJson = {};
@@ -340,4 +338,6 @@ module.exports = {
     createFolder,
     updateExcelTable,
     fetchWithRetry,
+    getFolderFromPath,
+    getFileNameFromPath,
 };

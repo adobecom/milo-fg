@@ -87,11 +87,9 @@ async function floodgateContent(adminPageUri, projectExcelPath, projectDetail) {
             logger.info(`Copying ${srcPath} to pink folder`);
 
             let copySuccess = false;
-            if (urlInfo.doc.fg?.sp?.status !== 200) {
-                const destinationFolder = `${srcPath.substring(0, srcPath.lastIndexOf('/'))}`;
-                copySuccess = await copyFile(adminPageUri, srcPath, destinationFolder, undefined, true);
-            } else {
-                // Get the source file
+            const destinationFolder = `${srcPath.substring(0, srcPath.lastIndexOf('/'))}`;
+            copySuccess = await copyFile(adminPageUri, srcPath, destinationFolder, undefined, true);
+            if (copySuccess === false) {
                 const file = await getFile(urlInfo.doc);
                 if (file) {
                     const destination = urlInfo.doc.filePath;
