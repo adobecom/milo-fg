@@ -90,7 +90,9 @@ async function getFileData(adminPageUri, filePath, isFloodgate) {
     const baseURI = isFloodgate ? sp.api.directory.create.fgBaseURI : sp.api.directory.create.baseURI;
     const resp = await fetchWithRetry(`${baseURI}${filePath}`, options);
     const json = await resp.json();
-    return json;
+    const fileDownloadUrl = json['@microsoft.graph.downloadUrl'];
+    const fileSize = json.size;
+    return { fileDownloadUrl, fileSize };
 }
 
 async function getFilesData(adminPageUri, filePaths, isFloodgate) {
@@ -114,7 +116,7 @@ async function getFilesData(adminPageUri, filePaths, isFloodgate) {
 
 async function getFile(doc) {
     if (doc && doc.sp && doc.sp.status === 200) {
-        const response = await fetchWithRetry(doc.sp['@microsoft.graph.downloadUrl']);
+        const response = await fetchWithRetry(doc.sp.fileDownloadUrl);
         return response.blob();
     }
     return undefined;

@@ -18,7 +18,7 @@
 const fetch = require('node-fetch');
 const { getFilesData } = require('./sharepoint');
 const {
-    getAioLogger, getUrlInfo, handleExtension, getFloodgateUrl, getDocPathFromUrl
+    getAioLogger, getUrlInfo, handleExtension, getDocPathFromUrl
 } = require('./utils');
 
 const PROJECT_STATUS = {
@@ -49,7 +49,7 @@ async function getProjectDetails(adminPageUri, projectExcelPath) {
     urlsData.forEach((urlRow) => {
         const url = urlRow.URL;
         const docPath = getDocPathFromUrl(url);
-        urls.set(url, { doc: { filePath: docPath, url, fg: { url: getFloodgateUrl(url) } } });
+        urls.set(url, { doc: { filePath: docPath, url } });
         // Add urls data to filePaths map
         if (filePaths.has(docPath)) {
             filePaths.get(docPath).push(url);
@@ -75,11 +75,11 @@ async function readProjectFile(projectWebUrl) {
 /**
  * Makes the sharepoint file data part of `projectDetail` per URL.
  */
-function injectSharepointData(projectUrls, filePaths, docPaths, spFiles, isFloodgate) {
+function injectSharepointData(projectUrls, filePaths, docPaths, spFiles) {
     for (let i = 0; i < spFiles.length; i += 1) {
         let fileBody = {};
         let status = 404;
-        if (!spFiles[i].error) {
+        if (spFiles[i].fileSize) {
             fileBody = spFiles[i];
             status = 200;
         }
@@ -87,13 +87,8 @@ function injectSharepointData(projectUrls, filePaths, docPaths, spFiles, isFlood
         const urls = filePaths.get(filePath);
         urls.forEach((key) => {
             const urlObjVal = projectUrls.get(key);
-            if (isFloodgate) {
-                urlObjVal.doc.fg.sp = fileBody;
-                urlObjVal.doc.fg.sp.status = status;
-            } else {
-                urlObjVal.doc.sp = fileBody;
-                urlObjVal.doc.sp.status = status;
-            }
+            urlObjVal.doc.sp = fileBody;
+            urlObjVal.doc.sp.status = status;
         });
     }
 }
@@ -109,8 +104,6 @@ async function updateProjectWithDocs(adminPageUri, projectDetail) {
     const docPaths = [...filePaths.keys()];
     const spFiles = await getFilesData(adminPageUri, docPaths);
     injectSharepointData(projectDetail.urls, filePaths, docPaths, spFiles);
-    const fgSpFiles = await getFilesData(adminPageUri, docPaths, true);
-    injectSharepointData(projectDetail.urls, filePaths, docPaths, fgSpFiles, true);
 }
 
 module.exports = {
