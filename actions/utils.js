@@ -30,6 +30,8 @@ const STATUS_FORMAT = {
 };
 const COPY_ACTION = 'copyAction';
 const PROMOTE_ACTION = 'promoteAction';
+const PREVIEW = 'preview';
+const PUBLISH = 'live';
 
 const MAX_RETRIES = 5;
 
@@ -64,18 +66,18 @@ function getUrlInfo(adminPageUri) {
 }
 
 // eslint-disable-next-line default-param-last
-async function simulatePreview(path, retryAttempt = 1, isFloodgate, adminPageUri) {
+async function simulatePreviewPublish(path, operation, retryAttempt = 1, isFloodgate, adminPageUri) {
     const previewStatus = { success: true, path };
     try {
         const urlInfo = getUrlInfo(adminPageUri);
         const repo = isFloodgate ? `${urlInfo.repo}-pink` : urlInfo.repo;
-        const previewUrl = `https://admin.hlx.page/preview/${urlInfo.owner}/${repo}/${urlInfo.ref}${path}`;
+        const previewUrl = `https://admin.hlx.page/${operation}/${urlInfo.owner}/${repo}/${urlInfo.ref}${path}`;
         const response = await fetch(
             `${previewUrl}`,
             { method: 'POST' },
         );
         if (!response.ok && retryAttempt <= MAX_RETRIES) {
-            await simulatePreview(path, retryAttempt + 1, isFloodgate, adminPageUri);
+            await simulatePreviewPublish(path, operation, retryAttempt + 1, isFloodgate, adminPageUri);
         }
         previewStatus.responseJson = await response.json();
     } catch (error) {
@@ -203,12 +205,14 @@ module.exports = {
     getAioLogger,
     getUrlInfo,
     getFloodgateUrl,
-    simulatePreview,
+    simulatePreviewPublish,
     handleExtension,
     getDocPathFromUrl,
     updateStatusToStateLib,
     getStatusFromStateLib,
     delay,
     COPY_ACTION,
-    PROMOTE_ACTION
+    PROMOTE_ACTION,
+    PREVIEW,
+    PUBLISH
 };

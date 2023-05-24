@@ -21,7 +21,7 @@ const {
     getAuthorizedRequestOption, createFolder, saveFile, updateExcelTable, getFileUsingDownloadUrl, fetchWithRetry
 } = require('../sharepoint');
 const {
-    getAioLogger, simulatePreview, handleExtension, updateStatusToStateLib, PROMOTE_ACTION, delay
+    getAioLogger, simulatePreviewPublish, handleExtension, updateStatusToStateLib, PROMOTE_ACTION, delay, PREVIEW, PUBLISH
 } = require('../utils');
 const appConfig = require('../appConfig');
 
@@ -49,7 +49,7 @@ async function main(params) {
             payload = 'Getting all files to be promoted.';
             updateStatusToStateLib(projectRoot, PROJECT_STATUS.IN_PROGRESS, payload, undefined, PROMOTE_ACTION);
             logger.info(payload);
-            payload = await promoteFloodgatedFiles(adminPageUri, projectExcelPath);
+            payload = await promoteFloodgatedFiles(adminPageUri, projectExcelPath, params.doPublish);
             updateStatusToStateLib(projectRoot, PROJECT_STATUS.COMPLETED, payload, undefined, PROMOTE_ACTION);
         }
     } catch (err) {
@@ -135,7 +135,7 @@ async function promoteCopy(adminPageUri, srcPath, destinationFolder) {
     return copySuccess;
 }
 
-async function promoteFloodgatedFiles(adminPageUri, projectExcelPath) {
+async function promoteFloodgatedFiles(adminPageUri, projectExcelPath, doPublish) {
     const logger = getAioLogger();
 
     async function promoteFile(downloadUrl, filePath) {
@@ -143,6 +143,7 @@ async function promoteFloodgatedFiles(adminPageUri, projectExcelPath) {
         try {
             let promoteSuccess = false;
             logger.info(`Promoting ${filePath}`);
+            logger.info(`doPublish value: ${doPublish}`);
             const { sp } = await getConfig(adminPageUri);
             const options = await getAuthorizedRequestOption();
             const res = await fetchWithRetry(`${sp.api.file.get.baseURI}${filePath}`, options);
@@ -199,30 +200,33 @@ async function promoteFloodgatedFiles(adminPageUri, projectExcelPath) {
     logger.info(payload);
 
     logger.info('Previewing promoted files.');
-    const previewStatuses = [];
-    for (let i = 0; i < promoteStatuses.length; i += 1) {
-        if (promoteStatuses[i].success) {
-            // eslint-disable-next-line no-await-in-loop
-            const result = await simulatePreview(handleExtension(promoteStatuses[i].srcPath), 1, false, adminPageUri);
-            previewStatuses.push(result);
-        }
-        // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
-        await delay();
-    }
+    const previewStatuses = await previewOrPublishPages(PREVIEW);
     payload = 'Completed generating Preview for promoted files.';
+    logger.info(payload);
+
+    payload = 'Publishing promoted files.';
+    logger.info(payload);
+
+    let publishStatuses = [];
+    if (doPublish) {
+        publishStatuses = await previewOrPublishPages(PUBLISH);
+    }
+    payload = 'Completed Publishing for promoted files.';
     logger.info(payload);
 
     const failedPromotes = promoteStatuses.filter((status) => !status.success)
         .map((status) => status.srcPath || 'Path Info Not available');
     const failedPreviews = previewStatuses.filter((status) => !status.success)
         .map((status) => status.path);
+    const failedPublishes = publishStatuses.filter((status) => !status.success)
+        .map((status) => status.path);
 
-    const excelValues = [['PROMOTE', startPromote, endPromote, failedPromotes.join('\n'), failedPreviews.join('\n')]];
+    const excelValues = [['PROMOTE', startPromote, endPromote, failedPromotes.join('\n'), failedPreviews.join('\n'), failedPublishes.join('\n')]];
     await updateExcelTable(adminPageUri, projectExcelPath, 'PROMOTE_STATUS', excelValues);
     payload = 'Project excel file updated with promote status.';
     logger.info(payload);
 
-    if (failedPromotes.length > 0 || failedPreviews.length > 0) {
+    if (failedPromotes.length > 0 || failedPreviews.length > 0 || failedPublishes.length > 0) {
         payload = 'Error occurred when promoting floodgated content. Check project excel sheet for additional information.';
         logger.info(payload);
         throw new Error(payload);
@@ -233,6 +237,20 @@ async function promoteFloodgatedFiles(adminPageUri, projectExcelPath) {
 
     payload = 'All tasks for Floodgate Promote completed';
     return payload;
+
+    async function previewOrPublishPages(operation) {
+        const previewPublishStatuses = [];
+        for (let i = 0; i < promoteStatuses.length; i += 1) {
+            if (promoteStatuses[i].success) {
+                // eslint-disable-next-line no-await-in-loop
+                const result = await simulatePreviewPublish(handleExtension(promoteStatuses[i].srcPath), operation, 1, false, adminPageUri);
+                previewStatuses.push(result);
+            }
+            // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
+            await delay();
+        }
+        return previewPublishStatuses;
+    }
 }
 
 exports.main = main;
