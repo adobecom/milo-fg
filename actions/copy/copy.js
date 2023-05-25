@@ -22,13 +22,14 @@ const {
     getAioLogger, updateStatusToStateLib, COPY_ACTION, getStatusFromStateLib
 } = require('../utils');
 const appConfig = require('../appConfig');
+const { isAuthorizedUser } = require('../sharepoint');
 
 // This returns the activation ID of the action that it called
 async function main(args) {
     const logger = getAioLogger();
     let payload;
     const {
-        adminPageUri, projectExcelPath, projectRoot
+        spToken, adminPageUri, projectExcelPath, projectRoot
     } = args;
     appConfig.setAppConfig(args);
     const projectPath = `${projectRoot}${projectExcelPath}`;
@@ -42,7 +43,11 @@ async function main(args) {
             payload = await updateStatusToStateLib(projectPath, PROJECT_STATUS.FAILED, payload, undefined, COPY_ACTION);
         } else {
             const storeValue = await getStatusFromStateLib(projectPath);
-            if (!appConfig.getSkipInProgressCheck() &&
+            const accountDtls = await isAuthorizedUser(spToken);
+            if (!accountDtls) {
+                payload = 'Could not determine the user.';
+                logger.error(payload);
+            } else if (!appConfig.getSkipInProgressCheck() &&
                 (storeValue?.action?.status === PROJECT_STATUS.IN_PROGRESS ||
                 storeValue?.action?.status === PROJECT_STATUS.STARTED)) {
                 payload = `A copy action project with activationid: ${storeValue?.action?.activationId} is already in progress. 

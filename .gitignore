@@ -12,7 +12,7 @@ dist
 config.json
 .env*
 .aio
-14257-milofg-*.json
+milofg-14257-*.json
 
 # Adobe I/O console config
 console.json
@@ -28,6 +28,7 @@ junit.xml
 coverage
 .aws.tmp.creds.json
 .wskdebug.props.tmp
+web-src
 
 # Parcel
 .parcel-cache

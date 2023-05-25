@@ -86,15 +86,6 @@ async function simulatePreviewPublish(path, operation, retryAttempt = 1, isFlood
     return previewStatus;
 }
 
-function getFloodgateUrl(url) {
-    if (!url) {
-        return undefined;
-    }
-    const urlArr = url.split('--');
-    urlArr[1] += '-pink';
-    return urlArr.join('--');
-}
-
 function handleExtension(path) {
     if (path.endsWith('.xlsx')) {
         return path.replace('.xlsx', '.json');
@@ -204,7 +195,6 @@ async function delay(milliseconds = 100) {
 module.exports = {
     getAioLogger,
     getUrlInfo,
-    getFloodgateUrl,
     simulatePreviewPublish,
     handleExtension,
     getDocPathFromUrl,

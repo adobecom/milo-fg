@@ -28,19 +28,19 @@ const appConfig = require('./appConfig');
  */
 class SharepointAuth {
     init() {
-        const appCfg = appConfig.getConfig();
+        const msalConfig = appConfig.getMsalConfig();
 
         const missingConfigs = [];
-        if (!appCfg.clientId) {
+        if (!msalConfig.clientId) {
             missingConfigs.push('CLIENT_ID');
         }
-        if (!appCfg.tenantId) {
+        if (!msalConfig.tenantId) {
             missingConfigs.push('TENANT_ID');
         }
-        if (!appCfg.certThumbprint) {
+        if (!msalConfig.certThumbprint) {
             missingConfigs.push('CERT_THUMB_PRINT');
         }
-        if (!appCfg.pvtKey) {
+        if (!msalConfig.pvtKey) {
             missingConfigs.push('PRIVATE_KEY');
         }
         if (missingConfigs.length > 0) {
@@ -52,12 +52,12 @@ class SharepointAuth {
         }
         this.authConfig = {
             auth: {
-                clientId: appCfg.clientId,
-                authority: `https://login.microsoftonline.com/${appCfg.tenantId}`,
+                clientId: msalConfig.clientId,
+                authority: `https://login.microsoftonline.com/${msalConfig.tenantId}`,
                 knownAuthorities: ['login.microsoftonline.com'],
                 clientCertificate: {
-                    privateKey: appCfg.pvtKey,
-                    thumbprint: appCfg.certThumbprint,
+                    privateKey: msalConfig.pvtKey,
+                    thumbprint: msalConfig.certThumbprint,
                 },
             },
         };

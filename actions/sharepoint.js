@@ -19,6 +19,7 @@ const { Headers } = require('node-fetch');
 const fetch = require('node-fetch');
 const { getConfig } = require('./config');
 const { getAioLogger } = require('./utils');
+const appConfig = require('./appConfig');
 const sharepointAuth = require('./sharepointAuth');
 
 const APP_USER_AGENT = 'ISV|Adobe|MiloFloodgate/0.1.0';
@@ -55,13 +56,43 @@ async function getAuthorizedRequestOption({ body = null, json = true, method = '
     return options;
 }
 
+async function getDriveRoot(accessToken) {
+    const logger = getAioLogger();
+    try {
+        const headers = new Headers();
+        headers.append('Authorization', `Bearer ${accessToken}`);
+        headers.append('User-Agent', APP_USER_AGENT);
+        headers.append('Accept', 'application/json');
+        const fgSite = appConfig.getFgSite();
+        const response = await fetchWithRetry(`${fgSite}/drive/root`, { headers });
+
+        if (response?.ok) {
+            const user = await response.json();
+            logger.info('User details:');
+            logger.info(JSON.stringify(user));
+            return user;
+        }
+        logger.info(`Unable to get User details: ${response?.status}`);
+    } catch (error) {
+        logger.info('Unable to fetch User Info');
+        logger.info(JSON.stringify(error));
+    }
+    return null;
+}
+
+async function isAuthorizedUser(accessToken) {
+    return getDriveRoot(accessToken);
+}
+
 async function getFileData(adminPageUri, filePath, isFloodgate) {
     const { sp } = await getConfig(adminPageUri);
     const options = await getAuthorizedRequestOption();
     const baseURI = isFloodgate ? sp.api.directory.create.fgBaseURI : sp.api.directory.create.baseURI;
     const resp = await fetchWithRetry(`${baseURI}${filePath}`, options);
     const json = await resp.json();
-    return json;
+    const fileDownloadUrl = json['@microsoft.graph.downloadUrl'];
+    const fileSize = json.size;
+    return { fileDownloadUrl, fileSize };
 }
 
 async function getFilesData(adminPageUri, filePaths, isFloodgate) {
@@ -85,7 +116,7 @@ async function getFilesData(adminPageUri, filePaths, isFloodgate) {
 
 async function getFile(doc) {
     if (doc && doc.sp && doc.sp.status === 200) {
-        const response = await fetchWithRetry(doc.sp['@microsoft.graph.downloadUrl']);
+        const response = await fetchWithRetry(doc.sp.fileDownloadUrl);
         return response.blob();
     }
     return undefined;
@@ -203,10 +234,8 @@ async function createSessionAndUploadFile(sp, file, dest, filename, isFloodgate)
 }
 
 async function copyFile(adminPageUri, srcPath, destinationFolder, newName, isFloodgate, isFloodgateLockedFile) {
-    await createFolder(adminPageUri, destinationFolder, isFloodgate);
     const { sp } = await getConfig(adminPageUri);
-    const { baseURI } = sp.api.file.copy;
-    const { fgBaseURI } = sp.api.file.copy;
+    const { baseURI, fgBaseURI } = sp.api.file.copy;
     const rootFolder = isFloodgate ? fgBaseURI.split('/').pop() : baseURI.split('/').pop();
 
     const payload = { ...sp.api.file.copy.payload, parentReference: { path: `${rootFolder}${destinationFolder}` } };
@@ -220,7 +249,7 @@ async function copyFile(adminPageUri, srcPath, destinationFolder, newName, isFlo
     // In case of FG copy action triggered via saveFile(), locked file copy happens in the floodgate content location
     // So baseURI is updated to reflect the destination accordingly
     const contentURI = isFloodgate && isFloodgateLockedFile ? fgBaseURI : baseURI;
-    const copyStatusInfo = await fetchWithRetry(`${contentURI}${srcPath}:/copy`, options);
+    const copyStatusInfo = await fetchWithRetry(`${contentURI}${srcPath}:/copy?@microsoft.graph.conflictBehavior=replace`, options);
     const statusUrl = copyStatusInfo.headers.get('Location');
     let copySuccess = false;
     let copyStatusJson = {};
@@ -332,6 +361,7 @@ function logHeaders(response) {
 
 module.exports = {
     getAuthorizedRequestOption,
+    isAuthorizedUser,
     getFilesData,
     getFile,
     getFileUsingDownloadUrl,
@@ -340,4 +370,6 @@ module.exports = {
     createFolder,
     updateExcelTable,
     fetchWithRetry,
+    getFolderFromPath,
+    getFileNameFromPath,
 };
