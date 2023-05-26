@@ -29,12 +29,12 @@ async function main(args) {
     const logger = getAioLogger();
     let payload;
     const {
-        spToken, adminPageUri, projectExcelPath, projectRoot
+        spToken, adminPageUri, projectExcelPath, rootFolder
     } = args;
     appConfig.setAppConfig(args);
-    const projectPath = `${projectRoot}${projectExcelPath}`;
+    const projectPath = `${rootFolder}${projectExcelPath}`;
     try {
-        if (!projectRoot || !projectExcelPath) {
+        if (!rootFolder || !projectExcelPath) {
             payload = 'Could not determine the project path. Try reloading the page and trigger the action again.';
             logger.error(payload);
         } else if (!adminPageUri) {

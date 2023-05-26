@@ -29,19 +29,19 @@ async function main(args) {
     const logger = getAioLogger();
     let payload;
     const {
-        spToken, adminPageUri, projectExcelPath, projectRoot
+        spToken, adminPageUri, projectExcelPath, fgRootFolder
     } = args;
     appConfig.setAppConfig(args);
     try {
-        if (!projectRoot) {
+        if (!fgRootFolder) {
             payload = 'Required data is not available to proceed with FG Promote action.';
             logger.error(payload);
         } else if (!adminPageUri || !projectExcelPath) {
             payload = 'Required data is not available to proceed with FG Promote action.';
             logger.error(payload);
-            payload = await updateStatusToStateLib(projectRoot, PROJECT_STATUS.FAILED, payload, '', PROMOTE_ACTION);
+            payload = await updateStatusToStateLib(fgRootFolder, PROJECT_STATUS.FAILED, payload, '', PROMOTE_ACTION);
         } else {
-            const storeValue = await getStatusFromStateLib(projectRoot);
+            const storeValue = await getStatusFromStateLib(fgRootFolder);
             const accountDtls = await isAuthorizedUser(spToken);
             const projStatus = storeValue?.action?.status;
             if (!accountDtls) {
@@ -54,7 +54,7 @@ async function main(args) {
                 storeValue.action.message = payload;
                 payload = storeValue;
             } else {
-                payload = await updateStatusToStateLib(projectRoot, PROJECT_STATUS.STARTED, 'Triggering promote action', '', PROMOTE_ACTION);
+                payload = await updateStatusToStateLib(fgRootFolder, PROJECT_STATUS.STARTED, 'Triggering promote action', '', PROMOTE_ACTION);
                 const ow = openwhisk();
                 return ow.actions.invoke({
                     name: 'milo-fg/promote-worker',
@@ -64,13 +64,13 @@ async function main(args) {
                 }).then(async (result) => {
                     logger.info(result);
                     //  attaching activation id to the status
-                    payload = await updateStatusToStateLib(projectRoot, PROJECT_STATUS.IN_PROGRESS, undefined, result.activationId, PROMOTE_ACTION);
+                    payload = await updateStatusToStateLib(fgRootFolder, PROJECT_STATUS.IN_PROGRESS, undefined, result.activationId, PROMOTE_ACTION);
                     return {
                         code: 200,
                         payload
                     };
                 }).catch(async (err) => {
-                    payload = await updateStatusToStateLib(projectRoot, PROJECT_STATUS.FAILED, `Failed to invoke actions ${err.message}`, undefined, PROMOTE_ACTION);
+                    payload = await updateStatusToStateLib(fgRootFolder, PROJECT_STATUS.FAILED, `Failed to invoke actions ${err.message}`, undefined, PROMOTE_ACTION);
                     return {
                         code: 500,
                         payload
@@ -84,7 +84,7 @@ async function main(args) {
         }
     } catch (err) {
         logger.error(err);
-        payload = updateStatusToStateLib(projectRoot, PROJECT_STATUS.FAILED, `Failed to invoke actions ${err.message}`, undefined, PROMOTE_ACTION);
+        payload = updateStatusToStateLib(fgRootFolder, PROJECT_STATUS.FAILED, `Failed to invoke actions ${err.message}`, undefined, PROMOTE_ACTION);
     }
 
     return {

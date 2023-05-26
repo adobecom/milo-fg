@@ -31,15 +31,15 @@ const DELAY_TIME_COPY = 3000;
 async function main(params) {
     const logger = getAioLogger();
     const {
-        adminPageUri, projectExcelPath, projectRoot
+        adminPageUri, projectExcelPath, rootFolder
     } = params;
-
-    appConfig.setAppConfig(params);
-    let projectPath = `${projectRoot}${projectExcelPath}`;
+    const projectPath = `${rootFolder}${projectExcelPath}`;
     let payload;
+    
+    appConfig.setAppConfig(params);
 
     try {
-        if (!projectRoot || !projectExcelPath) {
+        if (!rootFolder || !projectExcelPath) {
             payload = 'Could not determine the project path. Try reloading the page and trigger the action again.';
             logger.error(payload);
         } else if (!adminPageUri) {
@@ -48,7 +48,6 @@ async function main(params) {
             logger.error(payload);
         } else {
             urlInfo.setUrlInfo(adminPageUri);
-            projectPath = `${projectRoot}${projectExcelPath}`;
             payload = 'Getting all files to be floodgated from the project excel file';
             logger.info(payload);
             updateStatusToStateLib(projectPath, PROJECT_STATUS.IN_PROGRESS, payload, undefined, COPY_ACTION);
