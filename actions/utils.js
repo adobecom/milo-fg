@@ -19,6 +19,7 @@ const AioLogger = require('@adobe/aio-lib-core-logging');
 const stateLib = require('@adobe/aio-lib-state');
 const fetch = require('node-fetch');
 const crypto = require('crypto');
+const urlInfo = require('./urlInfo');
 
 const STATUS_FORMAT = {
     action: {
@@ -39,45 +40,18 @@ function getAioLogger(loggerName = 'main', logLevel = 'info') {
     return AioLogger(loggerName, { level: logLevel });
 }
 
-function getUrlInfo(adminPageUri) {
-    const location = new URL(adminPageUri);
-    function getParam(name) {
-        return location.searchParams.get(name);
-    }
-    const projectName = getParam('project');
-    const sub = projectName ? projectName.split('--') : [];
-
-    const sp = getParam('referrer');
-    const owner = getParam('owner') || sub[1];
-    const repo = getParam('repo') || sub[0];
-    const ref = getParam('ref') || 'main';
-
-    const urlInfo = {
-        sp,
-        owner,
-        repo,
-        ref,
-        origin: `https://${ref}--${repo}--${owner}.hlx.page`,
-        isValid() {
-            return sp && owner && repo && ref;
-        },
-    };
-    return urlInfo;
-}
-
 // eslint-disable-next-line default-param-last
-async function simulatePreviewPublish(path, operation, retryAttempt = 1, isFloodgate, adminPageUri) {
+async function simulatePreviewPublish(path, operation, retryAttempt = 1, isFloodgate) {
     const previewStatus = { success: true, path };
     try {
-        const urlInfo = getUrlInfo(adminPageUri);
-        const repo = isFloodgate ? `${urlInfo.repo}-pink` : urlInfo.repo;
-        const previewUrl = `https://admin.hlx.page/${operation}/${urlInfo.owner}/${repo}/${urlInfo.ref}${path}`;
+        const repo = isFloodgate ? `${urlInfo.getRepo()}-pink` : urlInfo.getRepo();
+        const previewUrl = `https://admin.hlx.page/${operation}/${urlInfo.getOwner()}/${repo}/${urlInfo.getBranch()}${path}`;
         const response = await fetch(
             `${previewUrl}`,
             { method: 'POST' },
         );
         if (!response.ok && retryAttempt <= MAX_RETRIES) {
-            await simulatePreviewPublish(path, operation, retryAttempt + 1, isFloodgate, adminPageUri);
+            await simulatePreviewPublish(path, operation, retryAttempt + 1, isFloodgate);
         }
         previewStatus.responseJson = await response.json();
     } catch (error) {
@@ -194,7 +168,6 @@ async function delay(milliseconds = 100) {
 
 module.exports = {
     getAioLogger,
-    getUrlInfo,
     simulatePreviewPublish,
     handleExtension,
     getDocPathFromUrl,

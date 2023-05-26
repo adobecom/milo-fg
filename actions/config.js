@@ -15,8 +15,8 @@
 * from Adobe.
 ************************************************************************* */
 
-const { getUrlInfo } = require('./utils');
 const appConfig = require('./appConfig');
+const urlInfo = require('./urlInfo');
 
 const GRAPH_API = 'https://graph.microsoft.com/v1.0';
 
@@ -98,8 +98,7 @@ function getHelixAdminConfig() {
     };
 }
 
-async function getConfig(adminPageUri) {
-    const urlInfo = getUrlInfo(adminPageUri);
+async function getConfig() {
     if (urlInfo.isValid()) {
         const applicationConfig = appConfig.getConfig();
         return {

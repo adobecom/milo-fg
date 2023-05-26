@@ -17,8 +17,9 @@
 
 const fetch = require('node-fetch');
 const { getFilesData } = require('./sharepoint');
+const urlInfo = require('./urlInfo');
 const {
-    getAioLogger, getUrlInfo, handleExtension, getDocPathFromUrl
+    getAioLogger, handleExtension, getDocPathFromUrl
 } = require('./utils');
 
 const PROJECT_STATUS = {
@@ -30,12 +31,11 @@ const PROJECT_STATUS = {
     FAILED: 'FAILED'
 };
 
-async function getProjectDetails(adminPageUri, projectExcelPath) {
+async function getProjectDetails(projectExcelPath) {
     const logger = getAioLogger();
     logger.info('Getting paths from project excel worksheet');
 
-    const urlInfo = getUrlInfo(adminPageUri);
-    const projectUrl = `${urlInfo.origin}${handleExtension(projectExcelPath)}`;
+    const projectUrl = `${urlInfo.getOrigin()}${handleExtension(projectExcelPath)}`;
     const projectFileJson = await readProjectFile(projectUrl);
     if (!projectFileJson) {
         const errorMessage = 'Could not read the project excel JSON';
@@ -93,7 +93,7 @@ function injectSharepointData(projectUrls, filePaths, docPaths, spFiles) {
     }
 }
 
-async function updateProjectWithDocs(adminPageUri, projectDetail) {
+async function updateProjectWithDocs(projectDetail) {
     const logger = getAioLogger();
     if (!projectDetail || !projectDetail.filePaths) {
         const errorMessage = 'Error occurred when injecting sharepoint data';
@@ -102,7 +102,7 @@ async function updateProjectWithDocs(adminPageUri, projectDetail) {
     }
     const { filePaths } = projectDetail;
     const docPaths = [...filePaths.keys()];
-    const spFiles = await getFilesData(adminPageUri, docPaths);
+    const spFiles = await getFilesData(docPaths);
     injectSharepointData(projectDetail.urls, filePaths, docPaths, spFiles);
 }
 

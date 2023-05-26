@@ -24,6 +24,7 @@ const {
     getAioLogger, simulatePreviewPublish, handleExtension, updateStatusToStateLib, PROMOTE_ACTION, delay, PREVIEW, PUBLISH
 } = require('../utils');
 const appConfig = require('../appConfig');
+const urlInfo = require('../urlInfo');
 
 const BATCH_REQUEST_PROMOTE = 20;
 const DELAY_TIME_PROMOTE = 3000;
@@ -46,10 +47,11 @@ async function main(params) {
             updateStatusToStateLib(projectRoot, PROJECT_STATUS.FAILED, payload, undefined, PROMOTE_ACTION);
             logger.error(payload);
         } else {
+            urlInfo.setUrlInfo(adminPageUri);
             payload = 'Getting all files to be promoted.';
             updateStatusToStateLib(projectRoot, PROJECT_STATUS.IN_PROGRESS, payload, undefined, PROMOTE_ACTION);
             logger.info(payload);
-            payload = await promoteFloodgatedFiles(adminPageUri, projectExcelPath, doPublish);
+            payload = await promoteFloodgatedFiles(projectExcelPath, doPublish);
             updateStatusToStateLib(projectRoot, PROJECT_STATUS.COMPLETED, payload, undefined, PROMOTE_ACTION);
         }
     } catch (err) {
@@ -66,8 +68,8 @@ async function main(params) {
 /**
  * Find all files in the pink tree to promote.
  */
-async function findAllFiles(adminPageUri) {
-    const { sp } = await getConfig(adminPageUri);
+async function findAllFiles() {
+    const { sp } = await getConfig();
     const baseURI = `${sp.api.excel.update.fgBaseURI}`;
     const rootFolder = baseURI.split('/').pop();
     const options = await getAuthorizedRequestOption({ method: 'GET' });
@@ -107,8 +109,8 @@ async function findAllFloodgatedFiles(baseURI, options, rootFolder, fgFiles, fgF
  * Copies the Floodgated files back to the main content tree.
  * Creates intermediate folders if needed.
  */
-async function promoteCopy(adminPageUri, srcPath, destinationFolder) {
-    const { sp } = await getConfig(adminPageUri);
+async function promoteCopy(srcPath, destinationFolder) {
+    const { sp } = await getConfig();
     const { baseURI } = sp.api.file.copy;
     const rootFolder = baseURI.split('/').pop();
     const payload = { ...sp.api.file.copy.payload, parentReference: { path: `${rootFolder}${destinationFolder}` } };
@@ -134,7 +136,7 @@ async function promoteCopy(adminPageUri, srcPath, destinationFolder) {
     return copySuccess;
 }
 
-async function promoteFloodgatedFiles(adminPageUri, projectExcelPath, doPublish) {
+async function promoteFloodgatedFiles(projectExcelPath, doPublish) {
     const logger = getAioLogger();
 
     async function promoteFile(downloadUrl, filePath) {
@@ -143,12 +145,12 @@ async function promoteFloodgatedFiles(adminPageUri, projectExcelPath, doPublish)
             let promoteSuccess = false;
             logger.info(`Promoting ${filePath}`);
             const destinationFolder = `${filePath.substring(0, filePath.lastIndexOf('/'))}`;
-            const copyFileStatus = await promoteCopy(adminPageUri, filePath, destinationFolder);
+            const copyFileStatus = await promoteCopy(filePath, destinationFolder);
             if (copyFileStatus) {
                 promoteSuccess = true;
             } else {
                 const file = await getFileUsingDownloadUrl(downloadUrl);
-                const saveStatus = await saveFile(adminPageUri, file, filePath);
+                const saveStatus = await saveFile(file, filePath);
                 if (saveStatus.success) {
                     promoteSuccess = true;
                 }
@@ -166,7 +168,7 @@ async function promoteFloodgatedFiles(adminPageUri, projectExcelPath, doPublish)
     const startPromote = new Date();
     let payload = 'Getting all floodgated files to promote.';
     // Iterate the floodgate tree and get all files to promote
-    const allFloodgatedFiles = await findAllFiles(adminPageUri);
+    const allFloodgatedFiles = await findAllFiles();
     // create batches to process the data
     const batchArray = [];
     for (let i = 0; i < allFloodgatedFiles.length; i += BATCH_REQUEST_PROMOTE) {
@@ -194,11 +196,11 @@ async function promoteFloodgatedFiles(adminPageUri, projectExcelPath, doPublish)
     for (let i = 0; i < promoteStatuses.length; i += 1) {
         if (promoteStatuses[i].success) {
             // eslint-disable-next-line no-await-in-loop
-            let result = await simulatePreviewPublish(handleExtension(promoteStatuses[i].srcPath), PREVIEW, 1, false, adminPageUri);
+            let result = await simulatePreviewPublish(handleExtension(promoteStatuses[i].srcPath), PREVIEW, 1, false);
             previewStatuses.push(result);
             if (doPublish) {
                 // eslint-disable-next-line no-await-in-loop
-                result = await simulatePreviewPublish(handleExtension(promoteStatuses[i].srcPath), PUBLISH, 1, false, adminPageUri);
+                result = await simulatePreviewPublish(handleExtension(promoteStatuses[i].srcPath), PUBLISH, 1, false);
                 publishStatuses.push(result);
             }
         }
@@ -221,7 +223,7 @@ async function promoteFloodgatedFiles(adminPageUri, projectExcelPath, doPublish)
         .map((status) => status.path);
 
     const excelValues = [['PROMOTE', startPromote, endPromote, failedPromotes.join('\n'), failedPreviews.join('\n'), failedPublishes.join('\n')]];
-    await updateExcelTable(adminPageUri, projectExcelPath, 'PROMOTE_STATUS', excelValues);
+    await updateExcelTable(projectExcelPath, 'PROMOTE_STATUS', excelValues);
     payload = 'Project excel file updated with promote status.';
     logger.info(payload);
 

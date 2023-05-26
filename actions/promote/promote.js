@@ -43,12 +43,11 @@ async function main(args) {
         } else {
             const storeValue = await getStatusFromStateLib(projectRoot);
             const accountDtls = await isAuthorizedUser(spToken);
+            const projStatus = storeValue?.action?.status;
             if (!accountDtls) {
                 payload = 'Could not determine the user.';
                 logger.error(payload);
-            } else if (!appConfig.getSkipInProgressCheck() &&
-                (storeValue?.action?.status === PROJECT_STATUS.IN_PROGRESS ||
-                storeValue?.action?.status === PROJECT_STATUS.STARTED)) {
+            } else if (!appConfig.getSkipInProgressCheck() && (projStatus === PROJECT_STATUS.IN_PROGRESS || projStatus === PROJECT_STATUS.STARTED)) {
                 payload = `A promote action project with activationid: ${storeValue?.action?.activationId} is already in progress. 
                 Not triggering this action. And the previous action can be retrieved by refreshing the console page`;
                 storeValue.action.status = PROJECT_STATUS.FAILED;
