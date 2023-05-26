@@ -35,7 +35,7 @@ async function main(params) {
     } = params;
     const projectPath = `${rootFolder}${projectExcelPath}`;
     let payload;
-    
+
     appConfig.setAppConfig(params);
 
     try {
