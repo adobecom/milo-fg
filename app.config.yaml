@@ -34,6 +34,7 @@ application:
               LOG_LEVEL: debug
             limits:
               timeout: 3600000
+              memorySize: 2048
           promote:
             function: actions/promote/promote.js
             web: 'yes'
@@ -48,6 +49,7 @@ application:
               LOG_LEVEL: debug
             limits:
               timeout: 3600000
+              memorySize: 2048
           status:
             function: actions/status/status.js
             web: 'yes'

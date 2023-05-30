@@ -67,10 +67,8 @@ async function getDriveRoot(accessToken) {
         const response = await fetchWithRetry(`${fgSite}/drive/root`, { headers });
 
         if (response?.ok) {
-            const user = await response.json();
-            logger.info('User details:');
-            logger.info(JSON.stringify(user));
-            return user;
+            const driveDtls = await response.json();
+            return driveDtls;
         }
         logger.info(`Unable to get User details: ${response?.status}`);
     } catch (error) {
@@ -136,7 +134,6 @@ async function createFolder(folder, isFloodgate) {
     options.body = JSON.stringify(sp.api.directory.create.payload);
 
     const baseURI = isFloodgate ? sp.api.directory.create.fgBaseURI : sp.api.directory.create.baseURI;
-
     const res = await fetchWithRetry(`${baseURI}${folder}`, options);
     if (res.ok) {
         return res.json();
@@ -233,7 +230,45 @@ async function createSessionAndUploadFile(sp, file, dest, filename, isFloodgate)
     return status;
 }
 
+/**
+ * The method gets the list of files, extracts the parent path, extracts uniq paths,
+ * filters common parents urls
+ * e.g.. [/a/b/one.txt, /a/b/two.txt, /a/c/three.txt, /a/c/d/three.txt]
+ * Folders to create would be [/a/b, /a/c/d]
+ * This triggers async and waits for batch to complete. These are small batches so should be fast.
+ * The $batch can be used in future to submit only one URL
+ * @param {*} adminPageUri AdminPageURI for getting configs
+ * @param {*} srcPathList Paths of files for which folder creating is needed
+ * @param {*} isFloodgate Is floodgate flag
+ * @returns Create folder status
+ */
+async function bulkCreateFolders(adminPageUri, srcPathList, isFloodgate) {
+    const logger = getAioLogger();
+    const createtFolderStatuses = [];
+    const allPaths = srcPathList.map((e) => {
+        if (e.length < 2 || !e[1]?.doc) return '';
+        return getFolderFromPath(e[1].doc.filePath);
+    }).filter((e) => true && e);
+    const uniqPathLst = Array.from(new Set(allPaths));
+    const leafPathLst = uniqPathLst.filter((e) => uniqPathLst.findIndex((e1) => e1.indexOf(`${e}/`) >= 0) < 0);
+    // logger.info(`Unique path list ${JSON.stringify(leafPathLst)}`);
+    try {
+        logger.info('bulkCreateFolders started');
+        const promises = leafPathLst.map((folder) => createFolder(adminPageUri, folder, isFloodgate));
+        logger.info('Got createfolder promises and waiting....');
+        createtFolderStatuses.push(...await Promise.all(promises));
+        logger.info(`bulkCreateFolders completed ${createtFolderStatuses?.length}`);
+        // logger.info(`bulkCreateFolders statuses ${JSON.stringify(createtFolderStatuses)}`);
+    } catch (error) {
+        logger.info('Error while creating folders');
+        logger.info(error?.stack);
+    }
+    logger.info(`bulkCreateFolders returning ${createtFolderStatuses?.length}`);
+    return createtFolderStatuses;
+}
+
 async function copyFile(srcPath, destinationFolder, newName, isFloodgate, isFloodgateLockedFile) {
+    const logger = getAioLogger();
     const { sp } = await getConfig();
     const { baseURI, fgBaseURI } = sp.api.file.copy;
     const rootFolder = isFloodgate ? fgBaseURI.split('/').pop() : baseURI.split('/').pop();
@@ -253,6 +288,9 @@ async function copyFile(srcPath, destinationFolder, newName, isFloodgate, isFloo
     const statusUrl = copyStatusInfo.headers.get('Location');
     let copySuccess = false;
     let copyStatusJson = {};
+    if (!statusUrl) {
+        logger.info(`Copy of ${srcPath} returned ${copyStatusInfo?.status} with no followup URL`);
+    }
     while (statusUrl && !copySuccess && copyStatusJson.status !== 'failed') {
         // eslint-disable-next-line no-await-in-loop
         const status = await fetchWithRetry(statusUrl);
@@ -346,14 +384,18 @@ async function fetchWithRetry(apiUrl, options, retryCounts) {
     });
 }
 
+function getHeadersStr(response) {
+    const headers = {};
+    response?.headers?.forEach((value, name) => {
+        headers[name] = value;
+    });
+    return JSON.stringify(headers);
+}
+
 function logHeaders(response) {
     if (!LOG_RESP_HEADER) return;
     const logger = getAioLogger();
-    const headers = {};
-    response.headers.forEach((value, name) => {
-        headers[name] = value;
-    });
-    const hdrStr = JSON.stringify(headers);
+    const hdrStr = getHeadersStr(response);
     const logStr = `Status is ${response.status} with headers ${hdrStr}`;
 
     if (logStr.toUpperCase().indexOf('RATE') > 0 || logStr.toUpperCase().indexOf('RETRY') > 0) logger.info(logStr);
@@ -372,4 +414,5 @@ module.exports = {
     fetchWithRetry,
     getFolderFromPath,
     getFileNameFromPath,
+    bulkCreateFolders,
 };

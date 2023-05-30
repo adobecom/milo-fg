@@ -17,9 +17,9 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 const openwhisk = require('openwhisk');
-const { PROJECT_STATUS } = require('../project');
+const { projectInProgress, PROJECT_STATUS } = require('../project');
 const {
-    getAioLogger, updateStatusToStateLib, getStatusFromStateLib, PROMOTE_ACTION
+    getAioLogger, updateStatusToStateLib, getStatusFromStateLib, PROMOTE_ACTION, actInProgress
 } = require('../utils');
 const appConfig = require('../appConfig');
 const { isAuthorizedUser } = require('../sharepoint');
@@ -41,13 +41,16 @@ async function main(args) {
             logger.error(payload);
             payload = await updateStatusToStateLib(fgRootFolder, PROJECT_STATUS.FAILED, payload, '', PROMOTE_ACTION);
         } else {
+            const ow = openwhisk();
             const storeValue = await getStatusFromStateLib(fgRootFolder);
+            const actId = storeValue?.action?.activationId;
+            const svStatus = storeValue?.action?.status;
             const accountDtls = await isAuthorizedUser(spToken);
             const projStatus = storeValue?.action?.status;
             if (!accountDtls) {
                 payload = 'Could not determine the user.';
                 logger.error(payload);
-            } else if (!appConfig.getSkipInProgressCheck() && (projStatus === PROJECT_STATUS.IN_PROGRESS || projStatus === PROJECT_STATUS.STARTED)) {
+            } else if (!appConfig.getSkipInProgressCheck() && await actInProgress(ow, actId, projectInProgress(svStatus))) {
                 payload = `A promote action project with activationid: ${storeValue?.action?.activationId} is already in progress. 
                 Not triggering this action. And the previous action can be retrieved by refreshing the console page`;
                 storeValue.action.status = PROJECT_STATUS.FAILED;
@@ -55,7 +58,6 @@ async function main(args) {
                 payload = storeValue;
             } else {
                 payload = await updateStatusToStateLib(fgRootFolder, PROJECT_STATUS.STARTED, 'Triggering promote action', '', PROMOTE_ACTION);
-                const ow = openwhisk();
                 return ow.actions.invoke({
                     name: 'milo-fg/promote-worker',
                     blocking: false, // this is the flag that instructs to execute the worker asynchronous

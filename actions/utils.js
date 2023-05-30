@@ -19,6 +19,7 @@ const AioLogger = require('@adobe/aio-lib-core-logging');
 const stateLib = require('@adobe/aio-lib-state');
 const fetch = require('node-fetch');
 const crypto = require('crypto');
+const events = require('events');
 const urlInfo = require('./urlInfo');
 
 const STATUS_FORMAT = {
@@ -35,6 +36,7 @@ const PREVIEW = 'preview';
 const PUBLISH = 'live';
 
 const MAX_RETRIES = 5;
+let eventEmitter = null;
 
 function getAioLogger(loggerName = 'main', logLevel = 'info') {
     return AioLogger(loggerName, { level: logLevel });
@@ -166,6 +168,41 @@ async function delay(milliseconds = 100) {
     await new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+async function actInProgress(ow, actId, svInProg = true) {
+    const logger = getAioLogger();
+    const finStatuses = ['success', 'failure', 'skipped', 'developer_error',
+        'system_error', 'invocation_error', 'application_error', 'timeout'];
+    if (svInProg) {
+        let owAct = {};
+        try {
+            owAct = await ow.activations.get({
+                activationId: actId
+            });
+            // logger.info(`Job status response for ${actId} is ${JSON.stringify(owAct)}`);
+            return owAct?.response?.status ? !finStatuses.includes(owAct.response.status) : svInProg;
+        } catch (err) {
+            logger.error(err?.stack);
+            logger.error(`Job status of ${actId} failed response ${JSON.stringify(owAct)}`);
+        }
+    }
+    return svInProg;
+}
+
+function logMemUsage() {
+    const logger = getAioLogger();
+    const memStr = JSON.stringify(process.memoryUsage());
+    logger.info(`Memory Usage : ${memStr}`);
+}
+
+function logMemUsageIter() {
+    logMemUsage();
+    if (!eventEmitter) {
+        eventEmitter = new events.EventEmitter();
+        eventEmitter.on('logMemUsage', logMemUsage);
+    }
+    setTimeout(() => eventEmitter.emit('logMemUsage'), 400);
+}
+
 module.exports = {
     getAioLogger,
     simulatePreviewPublish,
@@ -177,5 +214,8 @@ module.exports = {
     COPY_ACTION,
     PROMOTE_ACTION,
     PREVIEW,
-    PUBLISH
+    PUBLISH,
+    logMemUsage,
+    logMemUsageIter,
+    actInProgress
 };

@@ -106,8 +106,11 @@ async function updateProjectWithDocs(projectDetail) {
     injectSharepointData(projectDetail.urls, filePaths, docPaths, spFiles);
 }
 
+const projectInProgress = (status) => [PROJECT_STATUS.IN_PROGRESS, PROJECT_STATUS.STARTED].includes(status);
+
 module.exports = {
     getProjectDetails,
     updateProjectWithDocs,
+    projectInProgress,
     PROJECT_STATUS
 };

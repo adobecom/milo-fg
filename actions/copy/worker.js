@@ -17,10 +17,10 @@
 
 const { getProjectDetails, updateProjectWithDocs, PROJECT_STATUS } = require('../project');
 const {
-    updateExcelTable, getFile, saveFile, copyFile
+    updateExcelTable, getFile, saveFile, copyFile, bulkCreateFolders
 } = require('../sharepoint');
 const {
-    getAioLogger, simulatePreviewPublish, handleExtension, updateStatusToStateLib, COPY_ACTION, delay, PREVIEW
+    getAioLogger, simulatePreviewPublish, handleExtension, updateStatusToStateLib, COPY_ACTION, delay, PREVIEW, logMemUsage
 } = require('../utils');
 const appConfig = require('../appConfig');
 const urlInfo = require('../urlInfo');
@@ -30,6 +30,7 @@ const DELAY_TIME_COPY = 3000;
 
 async function main(params) {
     const logger = getAioLogger();
+    logMemUsage();
     const {
         adminPageUri, projectExcelPath, rootFolder
     } = params;
@@ -71,7 +72,7 @@ async function main(params) {
         logger.error(err);
         payload = err;
     }
-
+    logMemUsage();
     return {
         body: payload,
     };
@@ -93,6 +94,7 @@ async function floodgateContent(projectExcelPath, projectDetail) {
             const destinationFolder = `${srcPath.substring(0, srcPath.lastIndexOf('/'))}`;
             copySuccess = await copyFile(srcPath, destinationFolder, undefined, true);
             if (copySuccess === false) {
+                logger.info(`Copy was not successful for ${srcPath}. Alternate copy option will be used`);
                 const file = await getFile(fileInfo.doc);
                 if (file) {
                     const destination = fileInfo.doc.filePath;
@@ -126,10 +128,18 @@ async function floodgateContent(projectExcelPath, projectDetail) {
     // process data in batches
     const copyStatuses = [];
     for (let i = 0; i < batchArray.length; i += 1) {
+        // Log memory usage per batch as copy is a heavy operation. Can be removed after testing are done.
+        // Can be replaced with logMemUsageIter for regular logging
+        logMemUsage();
+        logger.info(`Batch create folder ${i} in progress`);
+        // eslint-disable-next-line no-await-in-loop
+        await bulkCreateFolders(batchArray[i], true);
+        logger.info(`Batch copy ${i} in progress`);
         // eslint-disable-next-line no-await-in-loop
         copyStatuses.push(...await Promise.all(
             batchArray[i].map((files) => copyFilesToFloodgateTree(files[1])),
         ));
+        logger.info(`Batch copy ${i} completed`);
         // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
         await delay(DELAY_TIME_COPY);
     }
