@@ -242,7 +242,7 @@ async function createSessionAndUploadFile(sp, file, dest, filename, isFloodgate)
  * @param {*} isFloodgate Is floodgate flag
  * @returns Create folder status
  */
-async function bulkCreateFolders(adminPageUri, srcPathList, isFloodgate) {
+async function bulkCreateFolders(srcPathList, isFloodgate) {
     const logger = getAioLogger();
     const createtFolderStatuses = [];
     const allPaths = srcPathList.map((e) => {
@@ -254,7 +254,7 @@ async function bulkCreateFolders(adminPageUri, srcPathList, isFloodgate) {
     // logger.info(`Unique path list ${JSON.stringify(leafPathLst)}`);
     try {
         logger.info('bulkCreateFolders started');
-        const promises = leafPathLst.map((folder) => createFolder(adminPageUri, folder, isFloodgate));
+        const promises = leafPathLst.map((folder) => createFolder(folder, isFloodgate));
         logger.info('Got createfolder promises and waiting....');
         createtFolderStatuses.push(...await Promise.all(promises));
         logger.info(`bulkCreateFolders completed ${createtFolderStatuses?.length}`);
