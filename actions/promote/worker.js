@@ -190,27 +190,17 @@ async function promoteFloodgatedFiles(adminPageUri, projectExcelPath, doPublish)
     logger.info(payload);
 
     logger.info('Previewing promoted files.');
-    const previewStatuses = [];
-    const publishStatuses = [];
-    for (let i = 0; i < promoteStatuses.length; i += 1) {
-        if (promoteStatuses[i].success) {
-            // eslint-disable-next-line no-await-in-loop
-            let result = await simulatePreviewPublish(handleExtension(promoteStatuses[i].srcPath), PREVIEW, 1, false, adminPageUri);
-            previewStatuses.push(result);
-            if (doPublish) {
-                // eslint-disable-next-line no-await-in-loop
-                result = await simulatePreviewPublish(handleExtension(promoteStatuses[i].srcPath), PUBLISH, 1, false, adminPageUri);
-                publishStatuses.push(result);
-            }
-        }
-        // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
-        await delay();
-    }
+    let previewStatuses = [];
+    let publishStatuses = [];
+    previewStatuses = await previewOrPublishPages(PREVIEW);
     payload = 'Completed generating Preview for promoted files.';
     logger.info(payload);
 
     if (doPublish) {
         payload = 'Publishing promoted files.';
+        logger.info(payload);
+        publishStatuses = await previewOrPublishPages(PUBLISH);
+        payload = 'Completed Publishing for promoted files';
         logger.info(payload);
     }
 
@@ -237,6 +227,20 @@ async function promoteFloodgatedFiles(adminPageUri, projectExcelPath, doPublish)
     logMemUsage();
     payload = 'All tasks for Floodgate Promote completed';
     return payload;
+
+    async function previewOrPublishPages(operation) {
+        const statuses = [];
+        for (let i = 0; i < promoteStatuses.length; i += 1) {
+            if (promoteStatuses[i].success) {
+                // eslint-disable-next-line no-await-in-loop
+                const result = await simulatePreviewPublish(handleExtension(promoteStatuses[i].srcPath), operation, 1, false, adminPageUri);
+                statuses.push(result);
+            }
+            // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
+            await delay();
+        }
+        return statuses;
+    }
 }
 
 exports.main = main;
