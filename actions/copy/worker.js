@@ -31,14 +31,12 @@ const DELAY_TIME_COPY = 3000;
 async function main(params) {
     const logger = getAioLogger();
     logMemUsage();
+    let payload;
     const {
         adminPageUri, projectExcelPath, rootFolder
     } = params;
-    const projectPath = `${rootFolder}${projectExcelPath}`;
-    let payload;
-
     appConfig.setAppConfig(params);
-
+    const projectPath = `${rootFolder}${projectExcelPath}`;
     try {
         if (!rootFolder || !projectExcelPath) {
             payload = 'Could not determine the project path. Try reloading the page and trigger the action again.';
