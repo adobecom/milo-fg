@@ -46,7 +46,6 @@ async function main(args) {
             const actId = storeValue?.action?.activationId;
             const svStatus = storeValue?.action?.status;
             const accountDtls = await isAuthorizedUser(spToken);
-            const projStatus = storeValue?.action?.status;
             if (!accountDtls) {
                 payload = 'Could not determine the user.';
                 logger.error(payload);

@@ -235,7 +235,7 @@ async function promoteFloodgatedFiles(projectExcelPath, doPublish) {
         for (let i = 0; i < promoteStatuses.length; i += 1) {
             if (promoteStatuses[i].success) {
                 // eslint-disable-next-line no-await-in-loop
-                const result = await simulatePreviewPublish(handleExtension(promoteStatuses[i].srcPath), operation, 1, false, adminPageUri);
+                const result = await simulatePreviewPublish(handleExtension(promoteStatuses[i].srcPath), operation, 1, false);
                 statuses.push(result);
             }
             // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
