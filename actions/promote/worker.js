@@ -29,6 +29,7 @@ const urlInfo = require('../urlInfo');
 const BATCH_REQUEST_PROMOTE = 20;
 const DELAY_TIME_PROMOTE = 3000;
 const MAX_CHILDREN = 1000;
+const ENABLE_HLX_PREVIEW = false;
 
 async function main(params) {
     const logger = getAioLogger();
@@ -194,16 +195,18 @@ async function promoteFloodgatedFiles(projectExcelPath, doPublish) {
     logger.info('Previewing promoted files.');
     let previewStatuses = [];
     let publishStatuses = [];
-    previewStatuses = await previewOrPublishPages(PREVIEW);
-    payload = 'Completed generating Preview for promoted files.';
-    logger.info(payload);
+    if (ENABLE_HLX_PREVIEW) {
+        previewStatuses = await previewOrPublishPages(PREVIEW);
+        payload = 'Completed generating Preview for promoted files.';
+        logger.info(payload);
 
-    if (doPublish) {
-        payload = 'Publishing promoted files.';
-        logger.info(payload);
-        publishStatuses = await previewOrPublishPages(PUBLISH);
-        payload = 'Completed Publishing for promoted files';
-        logger.info(payload);
+        if (doPublish) {
+            payload = 'Publishing promoted files.';
+            logger.info(payload);
+            publishStatuses = await previewOrPublishPages(PUBLISH);
+            payload = 'Completed Publishing for promoted files';
+            logger.info(payload);
+        }
     }
 
     const failedPromotes = promoteStatuses.filter((status) => !status.success)

@@ -27,6 +27,7 @@ const urlInfo = require('../urlInfo');
 
 const BATCH_REQUEST_COPY = 20;
 const DELAY_TIME_COPY = 3000;
+const ENABLE_HLX_PREVIEW = false;
 
 async function main(params) {
     const logger = getAioLogger();
@@ -146,14 +147,16 @@ async function floodgateContent(projectExcelPath, projectDetail) {
 
     logger.info('Previewing floodgated files... ');
     const previewStatuses = [];
-    for (let i = 0; i < copyStatuses.length; i += 1) {
-        if (copyStatuses[i].success) {
+    if (ENABLE_HLX_PREVIEW) {
+        for (let i = 0; i < copyStatuses.length; i += 1) {
+            if (copyStatuses[i].success) {
+                // eslint-disable-next-line no-await-in-loop
+                const result = await simulatePreviewPublish(handleExtension(copyStatuses[i].srcPath), PREVIEW, 1, true);
+                previewStatuses.push(result);
+            }
             // eslint-disable-next-line no-await-in-loop
-            const result = await simulatePreviewPublish(handleExtension(copyStatuses[i].srcPath), PREVIEW, 1, true);
-            previewStatuses.push(result);
+            await delay();
         }
-        // eslint-disable-next-line no-await-in-loop
-        await delay();
     }
     logger.info('Completed generating Preview for floodgated files.');
     const failedCopies = copyStatuses.filter((status) => !status.success)
