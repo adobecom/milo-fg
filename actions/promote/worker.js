@@ -89,7 +89,8 @@ async function findAllFiles() {
     const rootFolder = baseURI.split('/').pop();
     const options = await getAuthorizedRequestOption({ method: 'GET' });
 
-    return findAllFloodgatedFiles(baseURI, options, rootFolder, [], ['']);
+    // Temporarily restricting the iteration for promote to under /drafts folder only
+    return findAllFloodgatedFiles(baseURI, options, rootFolder, [], ['/drafts']);
 }
 
 /**
