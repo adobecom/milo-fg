@@ -35,7 +35,7 @@ function getAioLogger(loggerName = 'main', logLevel = 'info') {
 
 // eslint-disable-next-line default-param-last
 async function simulatePreviewPublish(path, operation, retryAttempt = 1, isFloodgate) {
-    const previewStatus = { success: true, path };
+    let previewStatus = { success: true, path };
     try {
         const repo = isFloodgate ? `${urlInfo.getRepo()}-pink` : urlInfo.getRepo();
         const previewUrl = `https://admin.hlx.page/${operation}/${urlInfo.getOwner()}/${repo}/${urlInfo.getBranch()}${path}`;
@@ -44,7 +44,7 @@ async function simulatePreviewPublish(path, operation, retryAttempt = 1, isFlood
             { method: 'POST' },
         );
         if (!response.ok && retryAttempt <= MAX_RETRIES) {
-            await simulatePreviewPublish(path, operation, retryAttempt + 1, isFloodgate);
+            previewStatus = await simulatePreviewPublish(path, operation, retryAttempt + 1, isFloodgate);
         }
         previewStatus.responseJson = await response.json();
     } catch (error) {
