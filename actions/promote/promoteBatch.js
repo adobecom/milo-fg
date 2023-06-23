@@ -113,14 +113,17 @@ async function findAllFiles() {
     const baseURI = `${sp.api.excel.update.fgBaseURI}`;
     const rootFolder = baseURI.split('/').pop();
     const options = await getAuthorizedRequestOption({ method: 'GET' });
+    const promoteIgnoreList = appConfig.getPromoteIgnorePaths();
+    logger.info(`Promote ignore list: ${promoteIgnoreList.toString()}`);
+
     // Temporarily restricting the iteration for promote to under /drafts folder only
-    return findAllFloodgatedFiles(baseURI, options, rootFolder, [], ['/drafts']);
+    return findAllFloodgatedFiles(baseURI, options, rootFolder, [], ['/drafts'], promoteIgnoreList);
 }
 
 /**
  * Iteratively finds all files under a specified root folder.
  */
-async function findAllFloodgatedFiles(baseURI, options, rootFolder, fgFiles, fgFolders) {
+async function findAllFloodgatedFiles(baseURI, options, rootFolder, fgFiles, fgFolders, promoteIgnoreList) {
     while (fgFolders.length !== 0) {
         const uri = `${baseURI}${fgFolders.shift()}:/children?$top=${MAX_CHILDREN}`;
         // eslint-disable-next-line no-await-in-loop
@@ -132,12 +135,16 @@ async function findAllFloodgatedFiles(baseURI, options, rootFolder, fgFiles, fgF
             const driveItems = json.value;
             driveItems?.forEach((item) => {
                 const itemPath = `${item.parentReference.path.replace(`/drive/root:/${rootFolder}`, '')}/${item.name}`;
-                if (item.folder) {
-                    // it is a folder
-                    fgFolders.push(itemPath);
+                if (!promoteIgnoreList.includes(itemPath)) {
+                    if (item.folder) {
+                        // it is a folder
+                        fgFolders.push(itemPath);
+                    } else {
+                        const downloadUrl = item['@microsoft.graph.downloadUrl'];
+                        fgFiles.push({ fileDownloadUrl: downloadUrl, filePath: itemPath });
+                    }
                 } else {
-                    const downloadUrl = item['@microsoft.graph.downloadUrl'];
-                    fgFiles.push({ fileDownloadUrl: downloadUrl, filePath: itemPath });
+                    logger.info(`Ignored from promote: ${itemPath}`);
                 }
             });
         }
@@ -253,6 +260,5 @@ async function triggerTrackerActivation(ow, args, actDtls, fgStatus) {
         return { actDtls };
     });
 }
-
 
 exports.main = main;
