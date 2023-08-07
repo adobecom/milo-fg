@@ -21,8 +21,12 @@ const urlInfo = require('./urlInfo');
 const GRAPH_API = 'https://graph.microsoft.com/v1.0';
 
 function getSharepointConfig(applicationConfig) {
-    const baseURI = `${applicationConfig.fgSite}/drive/root:${applicationConfig.payload.rootFolder}`;
-    const fgBaseURI = `${applicationConfig.fgSite}/drive/root:${applicationConfig.payload.fgRootFolder}`;
+    // get drive id if available
+    const driveId = `${applicationConfig.driveId}`;
+    const drive = driveId ? `/drives/${driveId}` : '/drive';
+
+    const baseURI = `${applicationConfig.fgSite}${drive}/root:${applicationConfig.rootFolder}`;
+    const fgBaseURI = `${applicationConfig.fgSite}${drive}/root:${applicationConfig.fgRootFolder}`;
     return {
         ...applicationConfig,
         clientApp: {
@@ -39,7 +43,7 @@ function getSharepointConfig(applicationConfig) {
             url: GRAPH_API,
             file: {
                 get: { baseURI, fgBaseURI },
-                download: { baseURI: `${applicationConfig.fgSite}/drive/items` },
+                download: { baseURI: `${applicationConfig.fgSite}${drive}/items` },
                 upload: {
                     baseURI,
                     fgBaseURI,
