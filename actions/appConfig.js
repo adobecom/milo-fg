@@ -32,7 +32,7 @@ class AppConfig {
         this.configMap.payload.fgRootFolder = params.fgRootFolder;
         this.configMap.payload.promoteIgnorePaths = params.promoteIgnorePaths || [];
         this.configMap.payload.doPublish = params.doPublish;
-        this.configMap.driveId = params.driveId;
+        this.configMap.payload.driveId = params.driveId;
 
         // These are from configs
         this.configMap.fgSite = params.fgSite;

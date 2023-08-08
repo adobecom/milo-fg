@@ -25,8 +25,8 @@ function getSharepointConfig(applicationConfig) {
     const driveId = `${applicationConfig.driveId}`;
     const drive = driveId ? `/drives/${driveId}` : '/drive';
 
-    const baseURI = `${applicationConfig.fgSite}${drive}/root:${applicationConfig.rootFolder}`;
-    const fgBaseURI = `${applicationConfig.fgSite}${drive}/root:${applicationConfig.fgRootFolder}`;
+    const baseURI = `${applicationConfig.fgSite}${drive}/root:${applicationConfig.payload.rootFolder}`;
+    const fgBaseURI = `${applicationConfig.fgSite}${drive}/root:${applicationConfig.payload.fgRootFolder}`;
     return {
         ...applicationConfig,
         clientApp: {
