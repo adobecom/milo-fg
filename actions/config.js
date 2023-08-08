@@ -22,7 +22,7 @@ const GRAPH_API = 'https://graph.microsoft.com/v1.0';
 
 function getSharepointConfig(applicationConfig) {
     // get drive id if available
-    const driveId = `${applicationConfig.driveId}`;
+    const driveId = `${applicationConfig.payload.driveId}`;
     const drive = driveId ? `/drives/${driveId}` : '/drive';
 
     const baseURI = `${applicationConfig.fgSite}${drive}/root:${applicationConfig.payload.rootFolder}`;
