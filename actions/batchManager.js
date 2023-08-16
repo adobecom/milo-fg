@@ -101,6 +101,7 @@ class BatchManager {
      */
 
     /**
+     * Read promoteAction/tracker.json
      * Structure
      * {
      *   instanceKeys: [_milo_pink],
@@ -117,6 +118,9 @@ class BatchManager {
         return {};
     }
 
+    /**
+     * Write to promoteAction/tracker.json
+     */
     async writeToBmTracker(data) {
         const content = await this.readBmTracker();
         content.instanceKeys = content.instanceKeys || [];
@@ -156,8 +160,8 @@ class BatchManager {
     }
 
     /**
-     * The file content of manifest files
-     * @returns File content of manifest file.
+     * Read instance_info.json under promoteAction/instance_<key>/instance_info.json
+     * @returns Read the file contents of instance_info.json
      */
     async getInstanceFileContent() {
         const buffer = await this.filesSdk.read(this.instanceFile);
@@ -170,7 +174,11 @@ class BatchManager {
      * ************** FLOW RELATED FUNCTIONS ********************
      * **********************************************************
      */
-    async resumeInstance() {
+
+    /**
+     * Reads tracker.json to get the instance key and then reads instance_info.json
+     */
+    async getInstanceData() {
         let instanceData = null;
         const bmData = await this.readBmTracker();
         const instanceKey = bmData.instanceKeys?.find((e) => !bmData[e].done && bmData[e].proceed);
@@ -192,7 +200,7 @@ class BatchManager {
             await this.writeToInstanceFile(ifc);
         }
 
-        // Update to instance file to start the batch processing
+        // Update promoteAction/tracker.json to start the batch processing
         const params = {};
         params[`${this.instanceKey}`] = {
             done: false,

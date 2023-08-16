@@ -34,7 +34,8 @@ async function main(params) {
 
     const batchManager = new BatchManager({ key: PROMOTE_ACTION });
     await batchManager.init();
-    const instanceContent = await batchManager.resumeInstance();
+    // Read instance_info.json
+    const instanceContent = await batchManager.getInstanceData();
     if (!instanceContent || !instanceContent.dtls) {
         return { body: 'None to run!' };
     }
@@ -82,7 +83,7 @@ async function main(params) {
                 const nextItem = batchesInfo.find((b) => !b.activationId);
                 const batchNumber = nextItem?.batchNumber;
                 if (batchNumber) {
-                    const newActDtls = await triggerActivation(ow,
+                    const newActDtls = await triggerPromoteWorkerAction(ow,
                         {
                             ...appConfig.getPassthruParams(),
                             batchNumber
@@ -93,7 +94,7 @@ async function main(params) {
                 await batchManager.writeToInstanceFile(instanceContent);
             }
 
-            stepMsg = 'Promoted trigger and track completed.';
+            stepMsg = 'Promote trigger and track completed.';
             logger.info(stepMsg);
         }
     } catch (err) {
@@ -115,7 +116,7 @@ async function main(params) {
 }
 
 /**
- * Checks if activativation is in progress by inspecting state and activations
+ * Checks if activation is in progress by inspecting state and activations
  * @param {*} fgRootFolder Root folder
  * @param {*} actDtls activation details like activation id
  * @param {*} ow Openwisk api interface
@@ -150,7 +151,7 @@ async function checkBatchesInProg(fgRootFolder, actDtls, ow) {
     return { anyInProg: batchInProg, allDone };
 }
 
-async function triggerActivation(ow, params, fgStatus) {
+async function triggerPromoteWorkerAction(ow, params, fgStatus) {
     return ow.actions.invoke({
         name: 'milo-fg/promote-worker',
         blocking: false, // this is the flag that instructs to execute the worker asynchronous
