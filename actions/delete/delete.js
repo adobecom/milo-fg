@@ -35,7 +35,7 @@ async function main(args) {
     appConfig.setAppConfig(args);
     const projectPath = `${rootFolder}${projectExcelPath}`;
     const userDetails = sharepointAuth.getUserDetails(spToken);
-    const fgStatus = new FgStatus({ action: DELETE_ACTION, statusKey: projectPath, userDetails });
+    const fgStatus = new FgStatus({ action: DELETE_ACTION, statusKey: '${DELETE_ACTION}~${projectPath}', userDetails });
     logger.info(`Delete action for ${projectPath} triggered by ${JSON.stringify(userDetails)}`);
     try {
         if (!rootFolder || !projectExcelPath) {
