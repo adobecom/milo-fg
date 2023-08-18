@@ -37,6 +37,18 @@ application:
             limits:
               timeout: 3600000
               memorySize: 2048
+          delete:
+            function: actions/delete/delete.js
+            web: 'yes'
+            runtime: nodejs:16
+            inputs:
+              LOG_LEVEL: debug
+          delete-worker:
+            function: actions/delete/worker.js
+            web: 'no'
+            runtime: nodejs:16
+            inputs:
+              LOG_LEVEL: debug
           promote:
             function: actions/promote/promote.js
             web: 'yes'
