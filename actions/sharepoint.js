@@ -21,7 +21,6 @@ const { getConfig } = require('./config');
 const { getAioLogger } = require('./utils');
 const appConfig = require('./appConfig');
 const sharepointAuth = require('./sharepointAuth');
-const FgStatus = require('./fgStatus');
 
 const SP_CONN_ERR_LST = ['ETIMEDOUT', 'ECONNRESET'];
 const APP_USER_AGENT = 'ISV|Adobe|MiloFloodgate/0.1.0';
@@ -364,57 +363,28 @@ async function getExcelTable(excelPath, tableName) {
     return [];
 }
 
-async function deleteAll(projectExcelPath, fgStatus) {
+async function deleteFloodgateDir(fgRootFolder) {
     const logger = getAioLogger();
     logger.info('Deleting content started.');
-    const deleteStatuses = [];
-    const { sp } = await getConfig();
-    const fgFolders = [''];
-    const baseURI = sp.api.directory.create.fgBaseURI;
-    const finalBaserURI = baseURI + '/drafts/nsivakum/trial';
-    const options = await getAuthorizedRequestOption({ method: 'GET' });
-    const uri = `${finalBaserURI}${fgFolders.shift()}:/children`;
-    const res = await fetchWithRetry(uri, options);
-    if (res.ok) {
-        const json = await res.json();
-        const files = json.value;
-        for (let i = 0; i < files.length; i += 1) {
-            const status = await deleteItemInProject('/drafts/nsivakum/trial/' + files[i].name);
-            deleteStatuses.push(status);
+    const baseURI = `${appConfig.getConfig().fgSite}/drive/root:${fgRootFolder}`;
+    let deleteSuccess = false;
+
+    const { fgDirPattern } = appConfig.getConfig();
+    const fgRegExp = new RegExp(fgDirPattern);
+    logger.info(fgRegExp);
+    if (fgRegExp.test(baseURI)) {
+        logger.info(`Deleting the folder ${baseURI} `);
+        const temp = '/drafts/nsivakum/trial';
+        const finalBaserURI = baseURI + temp;
+        try {
+            const { sp } = await getConfig();
+            await deleteFile(sp, `${finalBaserURI}`);
+            deleteSuccess = true;
+        } catch (error) {
+            logger.info(`Error occurred when trying to delete files of main content tree ${error.message}`);
         }
     }
-    const failedDeletes = deleteStatuses.filter((status) => !status.success)
-        .map((status) => status.path || 'Path Info Not available');
-
-    const fgErrors = failedDeletes.length > 0;
-    const payload = fgErrors ?
-        'Error occurred when deleting content. Check project excel sheet for additional information.' :
-        'Delete action was completed';
-    await fgStatus.updateStatusToStateLib({
-        status: fgErrors ? FgStatus.PROJECT_STATUS.COMPLETED_WITH_ERROR : FgStatus.PROJECT_STATUS.COMPLETED,
-        statusMessage: payload
-    });
-    const { startTime: startDelete, endTime: endDelete } = fgStatus.getStartEndTime();
-    const excelValues = [['DELETE', startDelete, endDelete, failedDeletes.join('\n')]];
-    await updateExcelTable(projectExcelPath, 'DELETE_STATUS', excelValues);
-    logger.info('Project excel file updated with delete status.');
-    return payload;
-}
-
-async function deleteItemInProject(filePath) {
-    const status = { success: false };
-    let deleteSuccess = true;
-    try {
-        const { sp } = await getConfig();
-        const baseURI = sp.api.file.get.fgBaseURI;
-        await deleteFile(sp, `${baseURI}${filePath}`);
-        deleteSuccess = true;
-    } catch (error) {
-        console.log(`Error occurred when trying to delete files of main content tree ${error.message}`);
-    }
-    status.success = deleteSuccess;
-    status.path = filePath;
-    return status;
+    return deleteSuccess;
 }
 
 async function updateExcelTable(excelPath, tableName, values) {
@@ -504,5 +474,5 @@ module.exports = {
     getFolderFromPath,
     getFileNameFromPath,
     bulkCreateFolders,
-    deleteAll,
+    deleteFloodgateDir,
 };

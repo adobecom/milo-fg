@@ -50,6 +50,7 @@ class AppConfig {
         this.configMap.groupCheckUrl = params.groupCheckUrl;
         this.configMap.fgUserGroups = this.getJsonFromStr(params.fgUserGroups, []);
         this.configMap.fgAdminGroups = this.getJsonFromStr(params.fgAdminGroups, []);
+        this.configMap.fgDirPattern = params.fgDirPattern;
         this.extractPrivateKey();
     }
 

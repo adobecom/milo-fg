@@ -21,9 +21,9 @@ const {
     getAioLogger, actInProgress, DELETE_ACTION
 } = require('../utils');
 const appConfig = require('../appConfig');
-const { isAuthorizedUser } = require('../sharepoint');
 const sharepointAuth = require('../sharepointAuth');
 const FgStatus = require('../fgStatus');
+const FgUser = require('../fgUser');
 
 // This returns the activation ID of the action that it called
 async function main(args) {
@@ -35,7 +35,7 @@ async function main(args) {
     appConfig.setAppConfig(args);
     const projectPath = `${rootFolder}${projectExcelPath}`;
     const userDetails = sharepointAuth.getUserDetails(spToken);
-    const fgStatus = new FgStatus({ action: DELETE_ACTION, statusKey: '${DELETE_ACTION}~${projectPath}', userDetails });
+    const fgStatus = new FgStatus({ action: DELETE_ACTION, statusKey: `${DELETE_ACTION}~${projectPath}`, userDetails });
     logger.info(`Delete action for ${projectPath} triggered by ${JSON.stringify(userDetails)}`);
     try {
         if (!rootFolder || !projectExcelPath) {
@@ -53,8 +53,8 @@ async function main(args) {
             const storeValue = await fgStatus.getStatusFromStateLib();
             const actId = storeValue?.action?.activationId;
             const svStatus = storeValue?.action?.status;
-            const accountDtls = await isAuthorizedUser(spToken);
-            if (!accountDtls) {
+            const fgUser = new FgUser({ at: args.spToken });
+            if (!await fgUser.isUser()) {
                 payload = 'Could not determine the user.';
                 logger.error(payload);
             } else if (!appConfig.getSkipInProgressCheck() &&
