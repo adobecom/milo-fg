@@ -107,17 +107,14 @@ async function main(params) {
  */
 async function createBatch(batchManager) {
     const { sp } = await getConfig();
-    const baseURI = `${sp.api.excel.update.fgBaseURI}`;
-    const rootFolder = baseURI.split('/').pop();
     const options = await getAuthorizedRequestOption({ method: 'GET' });
     const promoteIgnoreList = appConfig.getPromoteIgnorePaths();
     logger.info(`Promote ignore list: ${promoteIgnoreList}`);
 
     // Temporarily restricting the iteration for promote to under /drafts folder only
     return findAndBatchFGFiles({
-        baseURI,
+        baseURI: sp.api.file.get.fgBaseURI,
         options,
-        rootFolder,
         fgFolders: ['/drafts'],
         promoteIgnoreList,
         downloadBaseURI: sp.api.file.download.baseURI
@@ -129,9 +126,11 @@ async function createBatch(batchManager) {
  */
 async function findAndBatchFGFiles(
     {
-        baseURI, options, rootFolder, fgFolders, promoteIgnoreList, downloadBaseURI
+        baseURI, options, fgFolders, promoteIgnoreList, downloadBaseURI
     }, batchManager
 ) {
+    const fgRoot = baseURI.split(':').pop();
+    const pPathRegExp = new RegExp(`.*:${fgRoot}`);
     while (fgFolders.length !== 0) {
         const uri = `${baseURI}${fgFolders.shift()}:/children?$top=${MAX_CHILDREN}`;
         // eslint-disable-next-line no-await-in-loop
@@ -143,7 +142,7 @@ async function findAndBatchFGFiles(
             const driveItems = json.value;
             for (let di = 0; di < driveItems?.length; di += 1) {
                 const item = driveItems[di];
-                const itemPath = `${item.parentReference.path.replace(`/drive/root:/${rootFolder}`, '')}/${item.name}`;
+                const itemPath = `${item.parentReference.path.replace(pPathRegExp, '')}/${item.name}`;
                 if (!promoteIgnoreList?.includes(itemPath)) {
                     if (item.folder) {
                         // it is a folder

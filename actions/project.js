@@ -15,30 +15,22 @@
 * from Adobe.
 ************************************************************************* */
 
-const fetch = require('node-fetch');
-const { getFilesData } = require('./sharepoint');
-const urlInfo = require('./urlInfo');
+const { getExcelTable, getFilesData } = require('./sharepoint');
 const {
-    getAioLogger, handleExtension, getDocPathFromUrl
+    getAioLogger, getDocPathFromUrl
 } = require('./utils');
+
+const PROJECT_URL_TBL = 'URL';
 
 async function getProjectDetails(projectExcelPath) {
     const logger = getAioLogger();
     logger.info('Getting paths from project excel worksheet');
 
-    const projectUrl = `${urlInfo.getOrigin()}${handleExtension(projectExcelPath)}`;
-    const projectFileJson = await readProjectFile(projectUrl);
-    if (!projectFileJson) {
-        const errorMessage = 'Could not read the project excel JSON';
-        logger.error(errorMessage);
-        throw new Error(errorMessage);
-    }
-
-    const urlsData = projectFileJson.urls.data;
+    const urlsData = await getExcelTable(projectExcelPath, PROJECT_URL_TBL);
     const urls = new Map();
     const filePaths = new Map();
-    urlsData.forEach((urlRow) => {
-        const url = urlRow.URL;
+    urlsData.forEach((cols) => {
+        const url = cols?.length && cols[0];
         const docPath = getDocPathFromUrl(url);
         urls.set(url, { doc: { filePath: docPath, url } });
         // Add urls data to filePaths map
@@ -50,17 +42,8 @@ async function getProjectDetails(projectExcelPath) {
     });
 
     return {
-        url: projectUrl, urls, filePaths
+        urls, filePaths
     };
-}
-
-async function readProjectFile(projectWebUrl) {
-    const resp = await fetch(projectWebUrl, { cache: 'no-store' });
-    const json = await resp.json();
-    if (json?.urls?.data) {
-        return json;
-    }
-    return undefined;
 }
 
 /**
