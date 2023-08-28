@@ -374,7 +374,7 @@ async function deleteFloodgateDir(fgRootFolder) {
     logger.info(fgRegExp);
     if (fgRegExp.test(baseURI)) {
         logger.info(`Deleting the folder ${baseURI} `);
-        const temp = '/drafts/nsivakum/trial';
+        const temp = '/temp';
         const finalBaserURI = baseURI + temp;
         try {
             const { sp } = await getConfig();
