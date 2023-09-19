@@ -51,7 +51,7 @@ function getDocPathFromUrl(url) {
         path = path.slice(0, -5);
         return `${path}.xlsx`;
     }
-    if (path.endsWith('.svg')) {
+    if (path.endsWith('.svg') || path.endsWith('.pdf')) {
         return path;
     }
     if (path.endsWith('/')) {
