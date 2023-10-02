@@ -107,7 +107,7 @@ async function main(params) {
 }
 
 /**
- * Find all files in the pink tree to promote. Add to batches
+ * Find all files in the FG tree to promote. Add to batches.
  */
 async function createBatch(batchManager, appConfig) {
     const { sp } = await getConfig();

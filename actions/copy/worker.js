@@ -46,7 +46,7 @@ async function main(params) {
     const fgAction = new FgAction(COPY_ACTION, params);
     fgAction.init({ ow, skipUserDetails: true });
     const { fgStatus, appConfig } = fgAction.getActionParams();
-    const { adminPageUri, projectExcelPath } = appConfig.getPayload();
+    const { adminPageUri, projectExcelPath, fgColor } = appConfig.getPayload();
     try {
         // Validations
         const vStat = await fgAction.validateAction(valParams);
@@ -79,7 +79,7 @@ async function main(params) {
             statusMessage: respPayload
         });
 
-        respPayload = await floodgateContent(projectExcelPath, projectDetail, fgStatus);
+        respPayload = await floodgateContent(projectExcelPath, projectDetail, fgStatus, fgColor);
     } catch (err) {
         fgStatus.updateStatusToStateLib({
             status: FgStatus.PROJECT_STATUS.COMPLETED_WITH_ERROR,
@@ -94,7 +94,7 @@ async function main(params) {
     };
 }
 
-async function floodgateContent(projectExcelPath, projectDetail, fgStatus) {
+async function floodgateContent(projectExcelPath, projectDetail, fgStatus, fgColor) {
     const logger = getAioLogger();
     logger.info('Floodgating content started.');
 
@@ -104,7 +104,7 @@ async function floodgateContent(projectExcelPath, projectDetail, fgStatus) {
 
         try {
             const srcPath = fileInfo.doc.filePath;
-            logger.info(`Copying ${srcPath} to pink folder`);
+            logger.info(`Copying ${srcPath} to floodgated folder`);
 
             let copySuccess = false;
             const destinationFolder = `${srcPath.substring(0, srcPath.lastIndexOf('/'))}`;
@@ -167,8 +167,9 @@ async function floodgateContent(projectExcelPath, projectDetail, fgStatus) {
     if (ENABLE_HLX_PREVIEW) {
         for (let i = 0; i < copyStatuses.length; i += 1) {
             if (copyStatuses[i].success) {
+                const extn = handleExtension(copyStatuses[i].srcPath);
                 // eslint-disable-next-line no-await-in-loop
-                const result = await helixUtils.simulatePreviewPublish(handleExtension(copyStatuses[i].srcPath), PREVIEW, true);
+                const result = await helixUtils.simulatePreviewPublish(extn, PREVIEW, true, fgColor);
                 previewStatuses.push(result);
             }
             // eslint-disable-next-line no-await-in-loop

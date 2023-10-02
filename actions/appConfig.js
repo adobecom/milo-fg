@@ -33,6 +33,7 @@ class AppConfig {
         this.configMap.payload.promoteIgnorePaths = params.promoteIgnorePaths || [];
         this.configMap.payload.doPublish = params.doPublish;
         this.configMap.payload.driveId = params.driveId;
+        this.configMap.payload.fgColor = params.fgColor || 'pink';
 
         // These are from configs
         this.configMap.fgSite = params.fgSite;

@@ -22,10 +22,10 @@ const urlInfo = require('./urlInfo');
 const MAX_RETRIES = 5;
 
 class HelixUtils {
-    async simulatePreviewPublish(path, operation, isFloodgate, retryAttempt = 1) {
+    async simulatePreviewPublish(path, operation, isFloodgate, fgColor, retryAttempt = 1) {
         let previewStatus = { success: true, path };
         try {
-            const repo = isFloodgate ? `${urlInfo.getRepo()}-pink` : urlInfo.getRepo();
+            const repo = isFloodgate ? `${urlInfo.getRepo()}-${fgColor}` : urlInfo.getRepo();
             const previewUrl = `https://admin.hlx.page/${operation}/${urlInfo.getOwner()}/${repo}/${urlInfo.getBranch()}${path}`;
             const options = { method: 'POST' };
             const { helixAdminApiKeys } = appConfig.getConfig();
@@ -38,7 +38,7 @@ class HelixUtils {
                 options,
             );
             if (!response.ok && retryAttempt <= MAX_RETRIES) {
-                previewStatus = await this.simulatePreviewPublish(path, operation, retryAttempt + 1, isFloodgate);
+                previewStatus = await this.simulatePreviewPublish(path, operation, isFloodgate, fgColor, retryAttempt + 1);
             }
             previewStatus.responseJson = await response.json();
         } catch (error) {
