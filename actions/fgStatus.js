@@ -75,13 +75,13 @@ class FgStatus {
     }
 
     generateStoreKey(keySuffix) {
-        const { siteRootPath, siteFgRootPath } = appConfig.getConfig();
+        const { siteFgRootPath } = appConfig.getConfig();
         const { projectExcelPath } = appConfig.getPayload();
         let resp = '';
 
         switch (this.action) {
             case COPY_ACTION:
-                resp = `${siteRootPath || ''}${projectExcelPath || ''}`;
+                resp = `${siteFgRootPath || ''}${projectExcelPath || ''}`;
                 break;
             case DELETE_ACTION:
                 resp = `${DELETE_ACTION}${siteFgRootPath}`;
@@ -190,14 +190,14 @@ class FgStatus {
         try {
             // md5 hash of the config file
             const hash = crypto.createHash('md5').update(this.storeKey).digest('hex');
-            this.logger.debug(`Project path and hash value -- ${this.storeKey} and ${hash}`);
+            this.logger.info(`Project path and hash value -- ${this.storeKey} and ${hash}`);
             // init when running in an Adobe I/O Runtime action (OpenWhisk) (uses env vars __OW_API_KEY and __OW_NAMESPACE automatically)
             const state = await stateLib.init();
             // getting activation id data from io state
             const res = await state.get(hash); // res = { value, expiration }
             if (res) {
                 status = res.value;
-                this.logger.debug(`Status from the store ${JSON.stringify(status)}`);
+                this.logger.info(`Status from the store ${JSON.stringify(status)}`);
             }
         } catch (err) {
             this.logger.error(`Error getting data from state store ${err}`);

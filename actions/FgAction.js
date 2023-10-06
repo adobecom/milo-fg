@@ -122,7 +122,7 @@ class FgAction {
 
     /**
      * Check if the action is in progress.
-     * @param {*} options with checkActivation flag if the flag is set then activation 
+     * @param {*} options with checkActivation flag if the flag is set then activation
      *  is check is skipped
      * @returns object with ok true
      */
