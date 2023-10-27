@@ -9,23 +9,23 @@ application:
           fgSite: $FG_SITE
           fgClientId: $FG_CLIENT_ID
           fgAuthority: $FG_AUTHORITY
-          skipInProgressCheck: $SKIP_INPROGRESS_CHECK
           clientId: $CLIENT_ID
           tenantId: $TENANT_ID
           certPassword: $CERT_PASSWORD
           certKey: $CERT_KEY
           certThumbprint: $CERT_THUMB_PRINT
-          batchFilesPath: $BATCH_FILES_PATH
-          maxFilesPerBatch: $MAX_FILES_PER_BATCH
-          numBulkReq: $NUM_BULK_REQUEST
+          helixAdminApiKeys: $HELIX_ADMIN_API_KEYS
           groupCheckUrl: $GROUP_CHECK_URL
           fgUserGroups: $FG_USER_GROUPS
           fgAdminGroups: $FG_ADMIN_GROUPS
+          batchFilesPath: $BATCH_FILES_PATH
+          maxFilesPerBatch: $MAX_FILES_PER_BATCH
+          numBulkReq: $NUM_BULK_REQUEST
           fgDirPattern: $FG_DIR_PATTERN
           siteRootPathRex: $SITE_ROOT_PATH_REX
-          helixAdminApiKeys: $HELIX_ADMIN_API_KEYS
           bulkPreviewCheckInterval: $BULK_PREVIEW_CHECK_INTERVAL
           maxBulkPreviewChecks: $MAX_BULK_PREVIEW_CHECKS
+          skipInProgressCheck: $SKIP_INPROGRESS_CHECK
         actions:
           copy:
             function: actions/copy/copy.js
