@@ -59,13 +59,13 @@ class AppConfig {
         this.configMap.certKey = params.certKey;
         this.configMap.certThumbprint = params.certThumbprint;
         this.configMap.skipInProg = (params.skipInProgressCheck || '').toLowerCase() === 'true';
-        this.configMap.batchFilesPath = params.batchFilesPath || 'milo-process/batching';
+        this.configMap.batchFilesPath = params.batchFilesPath || 'milo-floodgate/batching';
         this.configMap.maxFilesPerBatch = parseInt(params.maxFilesPerBatch || '200', 10);
         this.configMap.numBulkReq = parseInt(params.numBulkReq || '20', 10);
         this.configMap.groupCheckUrl = params.groupCheckUrl;
         this.configMap.fgUserGroups = this.getJsonFromStr(params.fgUserGroups, []);
         this.configMap.fgAdminGroups = this.getJsonFromStr(params.fgAdminGroups, []);
-        this.configMap.fgDirPattern = params.fgDirPattern;
+        this.configMap.fgDirPattern = params.fgDirPattern || '-(pink|blue|purple)$';
         this.configMap.siteRootPathRex = this.siteRootPathRex || '.*/sites(/.*)<';
         this.configMap.helixAdminApiKeys = this.getJsonFromStr(params.helixAdminApiKeys);
         this.configMap.bulkPreviewCheckInterval = parseInt(params.bulkPreviewCheckInterval || '30', 10);
