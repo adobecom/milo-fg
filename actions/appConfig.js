@@ -62,7 +62,7 @@ class AppConfig {
         this.configMap.batchFilesPath = params.batchFilesPath || 'milo-floodgate/batching';
         this.configMap.maxFilesPerBatch = parseInt(params.maxFilesPerBatch || '200', 10);
         this.configMap.numBulkReq = parseInt(params.numBulkReq || '20', 10);
-        this.configMap.groupCheckUrl = params.groupCheckUrl;
+        this.configMap.groupCheckUrl = params.groupCheckUrl || 'https://graph.microsoft.com/v1.0/groups/{groupOid}/members?$count=true';
         this.configMap.fgUserGroups = this.getJsonFromStr(params.fgUserGroups, []);
         this.configMap.fgAdminGroups = this.getJsonFromStr(params.fgAdminGroups, []);
         this.configMap.fgDirPattern = params.fgDirPattern || '-(pink|blue|purple)$';
