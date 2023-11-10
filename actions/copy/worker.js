@@ -175,8 +175,10 @@ async function floodgateContent(projectExcelPath, projectDetail, fgStatus, fgCol
     const payload = fgErrors ?
         'Error occurred when floodgating content. Check project excel sheet for additional information.' :
         'All tasks for Floodgate Copy completed';
+    let status = fgErrors ? FgStatus.PROJECT_STATUS.COMPLETED_WITH_ERROR : FgStatus.PROJECT_STATUS.COMPLETED;
+    status = fgErrors && failedCopies.length === copyStatuses.length ? FgStatus.PROJECT_STATUS.FAILED : status;
     await fgStatus.updateStatusToStateLib({
-        status: fgErrors ? FgStatus.PROJECT_STATUS.COMPLETED_WITH_ERROR : FgStatus.PROJECT_STATUS.COMPLETED,
+        status,
         statusMessage: payload
     });
 
