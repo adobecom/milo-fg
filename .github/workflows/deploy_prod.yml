@@ -1,8 +1,9 @@
 name: AIO App CI
 
 on:
-  release:
-    types: [released]
+  push:
+    branches:
+      - main
 jobs:
   deploy:
     name: Deploy to Prod
@@ -13,6 +14,31 @@ jobs:
         node-version: ['16']
         os: [ubuntu-latest]
     steps:
+      - name: Check Repo Variables
+        run: |
+          echo "GROUP_CHECK_URL : $GROUP_CHECK_URL"
+          echo "FG_USER_GROUPS : $FG_USER_GROUPS"
+          echo "FG_ADMIN_GROUPS : $FG_ADMIN_GROUPS"
+          echo "BATCH_FILES_PATH : $BATCH_FILES_PATH"
+          echo "MAX_FILES_PER_BATCH : $MAX_FILES_PER_BATCH"
+          echo "NUM_BULK_REQUEST : $NUM_BULK_REQUEST"
+          echo "FG_DIR_PATTERN : $FG_DIR_PATTERN"
+          echo "SITE_ROOT_PATH_REX : $SITE_ROOT_PATH_REX"
+          echo "BULK_PREVIEW_CHECK_INTERVAL : $BULK_PREVIEW_CHECK_INTERVAL"
+          echo "MAX_BULK_PREVIEW_CHECKS : $MAX_BULK_PREVIEW_CHECKS"
+          echo "ENABLE_PREVEW_PUBLISH : $ENABLE_PREVEW_PUBLISH"
+        env: 
+          GROUP_CHECK_URL: ${{ vars.GROUP_CHECK_URL }}
+          FG_USER_GROUPS: ${{ vars.FG_USER_GROUPS }}
+          FG_ADMIN_GROUPS: ${{ vars.FG_ADMIN_GROUPS }}
+          BATCH_FILES_PATH: ${{ vars.BATCH_FILES_PATH }}
+          MAX_FILES_PER_BATCH: ${{ vars.MAX_FILES_PER_BATCH }}
+          NUM_BULK_REQUEST: ${{ vars.NUM_BULK_REQUEST }}
+          FG_DIR_PATTERN: ${{ vars.FG_DIR_PATTERN }}
+          SITE_ROOT_PATH_REX: ${{ vars.SITE_ROOT_PATH_REX }}
+          BULK_PREVIEW_CHECK_INTERVAL: ${{ vars.BULK_PREVIEW_CHECK_INTERVAL }}
+          MAX_BULK_PREVIEW_CHECKS: ${{ vars.MAX_BULK_PREVIEW_CHECKS }}
+          ENABLE_PREVEW_PUBLISH: ${{ vars.ENABLE_PREVEW_PUBLISH }}
       - name: Checkout
         uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.node-version }}
@@ -44,10 +70,19 @@ jobs:
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
           CERT_KEY: ${{ secrets.CERT_KEY }}
           CERT_THUMB_PRINT: ${{ secrets.CERT_THUMB_PRINT }}
+          HELIX_ADMIN_API_KEYS: ${{ secrets.HELIX_ADMIN_API_KEYS }}
           SPLUNK_HEC__HEC_TOKEN: ${{ secrets.SPLUNK_HEC_TOKEN_PROD }}
-          GROUP_CHECK_URL: ${{ secrets.GROUP_CHECK_URL }}
-          FG_USER_GROUPS: ${{ secrets.FG_USER_GROUPS }}
-          FG_ADMIN_GROUPS: ${{ secrets.FG_ADMIN_GROUPS }}
+          GROUP_CHECK_URL: ${{ vars.GROUP_CHECK_URL }}
+          FG_USER_GROUPS: ${{ vars.FG_USER_GROUPS }}
+          FG_ADMIN_GROUPS: ${{ vars.FG_ADMIN_GROUPS }}
+          BATCH_FILES_PATH: ${{ vars.BATCH_FILES_PATH }}
+          MAX_FILES_PER_BATCH: ${{ vars.MAX_FILES_PER_BATCH }}
+          NUM_BULK_REQUEST: ${{ vars.NUM_BULK_REQUEST }}
+          FG_DIR_PATTERN: ${{ vars.FG_DIR_PATTERN }}
+          SITE_ROOT_PATH_REX: ${{ vars.SITE_ROOT_PATH_REX }}
+          BULK_PREVIEW_CHECK_INTERVAL: ${{ vars.BULK_PREVIEW_CHECK_INTERVAL }}
+          MAX_BULK_PREVIEW_CHECKS: ${{ vars.MAX_BULK_PREVIEW_CHECKS }}
+          ENABLE_PREVEW_PUBLISH: ${{ vars.ENABLE_PREVEW_PUBLISH }}
         uses: adobe/aio-apps-action@2.0.2
         with:
           os: ${{ matrix.os }}

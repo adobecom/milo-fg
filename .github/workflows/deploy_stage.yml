@@ -25,7 +25,8 @@ jobs:
           echo "FG_DIR_PATTERN : $FG_DIR_PATTERN"
           echo "SITE_ROOT_PATH_REX : $SITE_ROOT_PATH_REX"
           echo "BULK_PREVIEW_CHECK_INTERVAL : $BULK_PREVIEW_CHECK_INTERVAL"
-          echo "MAX_BULK_PREVIEW_CHECKS : $MAX_BULK_PREVIEW_CHECKS"          
+          echo "MAX_BULK_PREVIEW_CHECKS : $MAX_BULK_PREVIEW_CHECKS"
+          echo "ENABLE_PREVEW_PUBLISH : $ENABLE_PREVEW_PUBLISH"
         env: 
           GROUP_CHECK_URL: ${{ vars.GROUP_CHECK_URL }}
           FG_USER_GROUPS: ${{ vars.FG_USER_GROUPS }}
@@ -57,11 +58,6 @@ jobs:
         with:
           os: ${{ matrix.os }}
           command: build
-      - name: Use Variables
-        run: |
-          echo "temp var : $TEMP_DATA"
-        env: 
-          TEMP_DATA: ${{ vars.TEMP_DATA }}
       - name: Deploy
         env:
           AIO_RUNTIME_NAMESPACE: ${{ secrets.AIO_RUNTIME_NAMESPACE_STAGE }}
