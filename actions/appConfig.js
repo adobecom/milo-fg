@@ -83,9 +83,9 @@ class AppConfig {
         };
 
         // Graybox params
-        payload.experienceName = params.experienceName;
         if (params.gbRootFolder) {
             payload.fgRootFolder = params.gbRootFolder;
+            payload.experienceName = params.experienceName;
         }
     }
 
