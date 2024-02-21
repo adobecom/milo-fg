@@ -44,7 +44,17 @@ async function main(params) {
     logger.info(`GB ROOT FOLDER ::: ${fgRootFolder}`);
     logger.info(`GB EXP NAME ::: ${experienceName}`);
 
+    // TODO - Get all files in the graybox folder for the specific experience name that need to be promoted
+    // TODO - Bulk Preview docx files
+    // TODO - GET markdown files using preview-url.md
+    // TODO - Process markdown - process MDAST by cleaning it up
+    // TODO - Generate updated Docx file using md2docx lib
+    // TODO - copy updated docx file to the default content tree
+    // TODO - run the bulk preview action on the list of files that were copied to default content tree
+    // TODO - update the project excel file as and when necessary to update the status of the promote action
+
     // Get all files in the graybox folder for the specific experience name
+    // NOTE: This does not capture content inside the locale/expName folders yet
     const fgFiles = await findAllFiles(experienceName, appConfig);
     logger.info(`Files in graybox folder in ${experienceName}`);
     logger.info(JSON.stringify(fgFiles));
@@ -56,14 +66,6 @@ async function main(params) {
     const excelValues = [['Sample Excel Update', toUTCStr(curreDateTime), 'sukamat@adobe.com', '']];
     await updateExcelTable(projectExcelPath, 'PROMOTE_STATUS', excelValues, IS_GRAYBOX);
     logger.info('Project excel file updated with copy status.');
-
-    // TODO - Bulk Preview docx files
-    // TODO - GET markdown files using preview-url.md
-    // TODO - Process markdown - process MDAST by cleaning it up
-    // TODO - Generate updated Docx file using md2docx lib
-    // TODO - copy updated docx file to the default content tree
-    // TODO - run the bulk preview action on the list of files that were copied to default content tree
-    // TODO - update the project excel file as and when necessary to update the status of the promote action
 
     responsePayload = 'Graybox Promote Worker action completed.';
     return exitAction({
