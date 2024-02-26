@@ -44,7 +44,6 @@ async function main(params) {
     logger.info(`GB ROOT FOLDER ::: ${fgRootFolder}`);
     logger.info(`GB EXP NAME ::: ${experienceName}`);
 
-    // TODO - Get all files in the graybox folder for the specific experience name that need to be promoted
     // TODO - Bulk Preview docx files
     // TODO - GET markdown files using preview-url.md
     // TODO - Process markdown - process MDAST by cleaning it up
@@ -55,9 +54,9 @@ async function main(params) {
 
     // Get all files in the graybox folder for the specific experience name
     // NOTE: This does not capture content inside the locale/expName folders yet
-    const fgFiles = await findAllFiles(experienceName, appConfig);
+    const gbFiles = await findAllFiles(experienceName, appConfig);
     logger.info(`Files in graybox folder in ${experienceName}`);
-    logger.info(JSON.stringify(fgFiles));
+    logger.info(JSON.stringify(gbFiles));
 
     // Update project excel file with status (sample)
     logger.info('Updating project excel file with status');
@@ -65,7 +64,7 @@ async function main(params) {
     const { projectExcelPath } = appConfig.getPayload();
     const excelValues = [['Sample Excel Update', toUTCStr(curreDateTime), 'sukamat@adobe.com', '']];
     await updateExcelTable(projectExcelPath, 'PROMOTE_STATUS', excelValues, IS_GRAYBOX);
-    logger.info('Project excel file updated with copy status.');
+    logger.info('Project excel file updated with promote status.');
 
     responsePayload = 'Graybox Promote Worker action completed.';
     return exitAction({
@@ -77,7 +76,6 @@ async function main(params) {
  * Find all files in the Graybox tree to promote.
  */
 async function findAllFiles(experienceName, appConf) {
-    logger.info('inside findAllFiles');
     const { sp } = await getConfig();
     const options = await getAuthorizedRequestOption({ method: 'GET' });
     const promoteIgnoreList = appConf.getPromoteIgnorePaths();
@@ -86,23 +84,28 @@ async function findAllFiles(experienceName, appConf) {
     return findAllGrayboxFiles({
         baseURI: sp.api.file.get.fgBaseURI,
         options,
-        fgFolders: appConf.isDraftOnly() ? [`/${experienceName}/drafts`] : [`/${experienceName}`],
+        gbFolders: appConf.isDraftOnly() ? [`/${experienceName}/drafts`] : [''],
         promoteIgnoreList,
-        downloadBaseURI: sp.api.file.download.baseURI
+        downloadBaseURI: sp.api.file.download.baseURI,
+        experienceName
     });
 }
 
 /**
- * Iteratively finds all files under a specified root folder. Add them to batches
+ * Iteratively finds all files under a specified root folder.
  */
 async function findAllGrayboxFiles({
-    baseURI, options, fgFolders, promoteIgnoreList, downloadBaseURI
+    baseURI, options, gbFolders, promoteIgnoreList, downloadBaseURI, experienceName
 }) {
-    const fgRoot = baseURI.split(':').pop();
-    const pPathRegExp = new RegExp(`.*:${fgRoot}`);
-    const fgFiles = [];
-    while (fgFolders.length !== 0) {
-        const uri = `${baseURI}${fgFolders.shift()}:/children?$top=${MAX_CHILDREN}`;
+    const gbRoot = baseURI.split(':').pop();
+    // Regular expression to select the gbRoot and anything before it
+    // Eg: the regex selects "https://<sharepoint-site>:/<app>-graybox"
+    const pPathRegExp = new RegExp(`.*:${gbRoot}`);
+    // Regular expression to select paths that has the experienceName at first or second level
+    const pathsToSelectRegExp = new RegExp(`^/([^/]+/)?${experienceName}(/.*)?$`);
+    const gbFiles = [];
+    while (gbFolders.length !== 0) {
+        const uri = `${baseURI}${gbFolders.shift()}:/children?$top=${MAX_CHILDREN}`;
         // eslint-disable-next-line no-await-in-loop
         const res = await fetchWithRetry(uri, options);
         if (res.ok) {
@@ -113,15 +116,15 @@ async function findAllGrayboxFiles({
             for (let di = 0; di < driveItems?.length; di += 1) {
                 const item = driveItems[di];
                 const itemPath = `${item.parentReference.path.replace(pPathRegExp, '')}/${item.name}`;
+                logger.info(`${itemPath} ::: ${pathsToSelectRegExp.test(itemPath)}`);
                 if (!isFilePatternMatched(itemPath, promoteIgnoreList)) {
-                    logger.info(`Item Path: ${itemPath}`);
                     if (item.folder) {
                         // it is a folder
-                        fgFolders.push(itemPath);
-                    } else {
+                        gbFolders.push(itemPath);
+                    } else if (pathsToSelectRegExp.test(itemPath)) {
                         const downloadUrl = `${downloadBaseURI}/${item.id}/content`;
                         // eslint-disable-next-line no-await-in-loop
-                        fgFiles.push({ fileDownloadUrl: downloadUrl, filePath: itemPath });
+                        gbFiles.push({ fileDownloadUrl: downloadUrl, filePath: itemPath });
                     }
                 } else {
                     logger.info(`Ignored from promote: ${itemPath}`);
@@ -129,7 +132,7 @@ async function findAllGrayboxFiles({
             }
         }
     }
-    return fgFiles;
+    return gbFiles;
 }
 
 function exitAction(resp) {
