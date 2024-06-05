@@ -21,7 +21,7 @@ const { getAioLogger } = require('./utils');
 const SharepointAuth = require('./sharepointAuth');
 
 const SP_CONN_ERR_LST = ['ETIMEDOUT', 'ECONNRESET'];
-const APP_USER_AGENT = 'ISV|Adobe|MiloFloodgate/0.1.0';
+const APP_USER_AGENT = 'NONISV|Adobe|MiloFloodgate/0.1.0';
 const BATCH_REQUEST_LIMIT = 20;
 const BATCH_DELAY_TIME = 200;
 const NUM_REQ_THRESHOLD = 5;
