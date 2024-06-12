@@ -56,7 +56,7 @@ class AppConfig {
         payload.enableDelete = params.enableDelete;
 
         // These are from configs and not activation related
-        this.configMap.fgSite = params.fgSite;
+        this.configMap.fgSite = params.spSite || params.fgSite;
         this.configMap.fgClientId = params.fgClientId;
         this.configMap.fgAuthority = params.fgAuthority;
         this.configMap.clientId = params.clientId;
