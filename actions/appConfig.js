@@ -54,9 +54,10 @@ class AppConfig {
         payload.draftsOnly = params.draftsOnly;
         payload.enablePromote = params.enablePromote;
         payload.enableDelete = params.enableDelete;
+        payload.spSite = params.spSite;
 
         // These are from configs and not activation related
-        this.configMap.fgSite = params.spSite || params.fgSite;
+        this.configMap.fgSite = payload.spSite || params.fgSite;
         this.configMap.fgClientId = params.fgClientId;
         this.configMap.fgAuthority = params.fgAuthority;
         this.configMap.clientId = params.clientId;
