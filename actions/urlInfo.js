@@ -35,7 +35,8 @@ class UrlInfo {
         this.urlInfoMap.owner = owner;
         this.urlInfoMap.repo = repo;
         this.urlInfoMap.branch = branch;
-        this.urlInfoMap.origin = `https://${branch}--${repo}--${owner}.hlx.page`;
+        const sld = adminPageUri.includes('.aem.page') ? 'aem.page' : 'hlx.page';
+        this.urlInfoMap.origin = `https://${branch}--${repo}--${owner}.${sld}`;
     }
 
     isValid() {
