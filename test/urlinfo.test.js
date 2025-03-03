@@ -19,7 +19,7 @@ const UrlInfo = require('../actions/urlInfo');
 describe('UrlInfo', () => {
     // Constructing a UrlInfo object with a valid adminPageUri sets the urlInfoMap with the correct values.
     it('should set urlInfoMap with correct values when adminPageUri is valid', () => {
-        const adminPageUri = 'https://example.com/admin?project=projectName&referrer=referrerName&owner=ownerName&repo=repoName&ref=branchName';
+        const adminPageUri = 'https://main--main--adobecom.hlx.page/admin?project=projectName&referrer=referrerName&owner=ownerName&repo=repoName&ref=branchName';
         const urlInfo = new UrlInfo(adminPageUri);
 
         expect(urlInfo.getUrlInfo()).toEqual({
@@ -30,6 +30,20 @@ describe('UrlInfo', () => {
             origin: 'https://branchName--repoName--ownerName.hlx.page'
         });
     });
+
+    it('should set urlInfoMap with correct values when adminPageUri is valid with aem.page', () => {
+        const adminPageUri = 'https://main--main--adobecom.aem.page/admin?project=projectName&referrer=referrerName&owner=ownerName&repo=repoName&ref=branchName';
+        const urlInfo = new UrlInfo(adminPageUri);
+
+        expect(urlInfo.getUrlInfo()).toEqual({
+            sp: 'referrerName',
+            owner: 'ownerName',
+            repo: 'repoName',
+            branch: 'branchName',
+            origin: 'https://branchName--repoName--ownerName.aem.page'
+        });
+    });
+
 
     // Constructing a UrlInfo object with an invalid adminPageUri sets the urlInfoMap with undefined values.
     it('should set urlInfoMap with values', () => {
