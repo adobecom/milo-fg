@@ -14,10 +14,44 @@
  * is strictly forbidden unless prior written permission is obtained
  * from Adobe.
  ************************************************************************* */
-const { Headers } = require('node-fetch');
 /* eslint-disable global-require */
-jest.mock('node-fetch', () => require('fetch-mock-jest').sandbox());
-const fetchMock = require('node-fetch');
+jest.mock('node-fetch', () => {
+    const { FetchMock } = require('fetch-mock');
+    const nodeFetchActual = jest.requireActual('node-fetch');
+    const mockFetch = new FetchMock({
+        Headers: nodeFetchActual.Headers,
+        Request: nodeFetchActual.Request,
+        Response: nodeFetchActual.Response,
+        fetch: nodeFetchActual.default
+    });
+    // Return the callable fetchHandler with all FetchMock methods bound to mockFetch
+    const { fetchHandler } = mockFetch;
+    // Copy all methods from mockFetch (including prototype methods) and bind them
+    Object.getOwnPropertyNames(Object.getPrototypeOf(mockFetch)).forEach(key => {
+        if (key !== 'constructor' && typeof mockFetch[key] === 'function') {
+            fetchHandler[key] = mockFetch[key].bind(mockFetch);
+        }
+    });
+    Object.keys(mockFetch).forEach(key => {
+        if (typeof mockFetch[key] === 'function') {
+            fetchHandler[key] = mockFetch[key].bind(mockFetch);
+        } else {
+            fetchHandler[key] = mockFetch[key];
+        }
+    });
+    fetchHandler.Headers = nodeFetchActual.Headers;
+    fetchHandler.Request = nodeFetchActual.Request;
+    fetchHandler.Response = nodeFetchActual.Response;
+    // Add reset() method for backwards compatibility
+    fetchHandler.reset = () => {
+        mockFetch.clearHistory();
+        mockFetch.removeRoutes();
+        return fetchHandler;
+    };
+    return fetchHandler;
+});
+const fetch = require('node-fetch');
+const { Headers } = fetch;
 
 describe('sharepoint', () => {
     let Sharepoint = null;
@@ -300,7 +334,7 @@ describe('sharepoint', () => {
     });
 
     it('should delete file when given valid file path and SharePoint object', async () => {
-        fetchMock.deleteAny(200);
+        fetch.delete('*', 200);
         const sharepoint = new Sharepoint(appConfig);
         const sp = {
             api: {
@@ -321,7 +355,7 @@ describe('sharepoint', () => {
     });
     it('should rename a file successfully with valid inputs', async () => {
         // Mock the necessary dependencies
-        fetchMock.patchAny(200);
+        fetch.patch('*', 200);
         const sharepoint = new Sharepoint(appConfig);
 
         // Define the test inputs
@@ -551,7 +585,7 @@ describe('sharepoint', () => {
             body: {}
         };
         let fetchMockCalled = 0;
-        fetchMock.mock('*', () => {
+        fetch.route('*', () => {
             fetchMockCalled += 1;
             return fetchMockCalled > 1 ? mockResponse2 : mockResponse;
         });
