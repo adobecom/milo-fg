@@ -9,8 +9,9 @@
     "@adobe/aio-sdk": "^6.0.0",
     "@azure/msal-node": "^2.6.5",
     "@babel/eslint-parser": "^7.24.1",
-    "fetch-mock-jest": "^1.5.1",
+    "@fetch-mock/jest": "^0.2.20",
     "node-fetch": "^2.6.0",
+    "fetch-mock": "^12.6.0",
     "openwhisk": "^3.21.8"
   },
   "devDependencies": {
@@ -24,6 +25,6 @@
     "e2e": "jest --collectCoverage=false --testRegex ./e2e"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   }
 }

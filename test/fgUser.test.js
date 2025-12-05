@@ -15,8 +15,42 @@
  * from Adobe.
  ************************************************************************* */
 /* eslint-disable global-require */
-jest.mock('node-fetch', () => require('fetch-mock-jest').sandbox());
-const fetchMock = require('node-fetch');
+jest.mock('node-fetch', () => {
+    const { FetchMock } = require('fetch-mock');
+    const nodeFetchActual = jest.requireActual('node-fetch');
+    const mockFetch = new FetchMock({
+        Headers: nodeFetchActual.Headers,
+        Request: nodeFetchActual.Request,
+        Response: nodeFetchActual.Response,
+        fetch: nodeFetchActual.default
+    });
+    // Return the callable fetchHandler with all FetchMock methods bound to mockFetch
+    const { fetchHandler } = mockFetch;
+    // Copy all methods from mockFetch (including prototype methods) and bind them
+    Object.getOwnPropertyNames(Object.getPrototypeOf(mockFetch)).forEach(key => {
+        if (key !== 'constructor' && typeof mockFetch[key] === 'function') {
+            fetchHandler[key] = mockFetch[key].bind(mockFetch);
+        }
+    });
+    Object.keys(mockFetch).forEach(key => {
+        if (typeof mockFetch[key] === 'function') {
+            fetchHandler[key] = mockFetch[key].bind(mockFetch);
+        } else {
+            fetchHandler[key] = mockFetch[key];
+        }
+    });
+    fetchHandler.Headers = nodeFetchActual.Headers;
+    fetchHandler.Request = nodeFetchActual.Request;
+    fetchHandler.Response = nodeFetchActual.Response;
+    // Add reset() method for backwards compatibility
+    fetchHandler.reset = () => {
+        mockFetch.clearHistory();
+        mockFetch.removeRoutes();
+        return fetchHandler;
+    };
+    return fetchHandler;
+});
+const fetch = require('node-fetch');
 
 describe('fgUser', () => {
     let FgUser;
@@ -59,11 +93,11 @@ describe('fgUser', () => {
     });
 
     afterEach(() => {
-        fetchMock.reset();
+        fetch.reset();
     });
 
     it('is an admin', async () => {
-        fetchMock.get('*', () => ({
+        fetch.get('*', () => ({
             value: ['a']
         }));
         const found = await fgUser.isAdmin();
@@ -77,7 +111,7 @@ describe('fgUser', () => {
     });
 
     it('is an fg user', async () => {
-        fetchMock.get('*', () => ({
+        fetch.get('*', () => ({
             value: ['b']
         }));
         const found = await fgUser.isUser();

@@ -15,8 +15,42 @@
  * from Adobe.
  ************************************************************************* */
 /* eslint-disable global-require */
-jest.mock('node-fetch', () => require('fetch-mock-jest').sandbox());
-const fetchMock = require('node-fetch');
+jest.mock('node-fetch', () => {
+    const { FetchMock } = require('fetch-mock');
+    const nodeFetchActual = jest.requireActual('node-fetch');
+    const mockFetch = new FetchMock({
+        Headers: nodeFetchActual.Headers,
+        Request: nodeFetchActual.Request,
+        Response: nodeFetchActual.Response,
+        fetch: nodeFetchActual.default
+    });
+    // Return the callable fetchHandler with all FetchMock methods bound to mockFetch
+    const { fetchHandler } = mockFetch;
+    // Copy all methods from mockFetch (including prototype methods) and bind them
+    Object.getOwnPropertyNames(Object.getPrototypeOf(mockFetch)).forEach(key => {
+        if (key !== 'constructor' && typeof mockFetch[key] === 'function') {
+            fetchHandler[key] = mockFetch[key].bind(mockFetch);
+        }
+    });
+    Object.keys(mockFetch).forEach(key => {
+        if (typeof mockFetch[key] === 'function') {
+            fetchHandler[key] = mockFetch[key].bind(mockFetch);
+        } else {
+            fetchHandler[key] = mockFetch[key];
+        }
+    });
+    fetchHandler.Headers = nodeFetchActual.Headers;
+    fetchHandler.Request = nodeFetchActual.Request;
+    fetchHandler.Response = nodeFetchActual.Response;
+    // Add reset() method for backwards compatibility
+    fetchHandler.reset = () => {
+        mockFetch.clearHistory();
+        mockFetch.removeRoutes();
+        return fetchHandler;
+    };
+    return fetchHandler;
+});
+const fetch = require('node-fetch');
 const UrlInfo = require('../actions/urlInfo');
 
 describe('HelixUtils', () => {
@@ -47,7 +81,7 @@ describe('HelixUtils', () => {
         HelixUtils = require('../actions/helixUtils');
         helixUtils = new HelixUtils(appConfigMock);
 
-        fetchMock.post('*', () => ({
+        fetch.post('*', () => ({
             messageId: 'a',
             job: {
                 name: 'JN',
@@ -56,7 +90,7 @@ describe('HelixUtils', () => {
                 self: 'https://admin.hlx.page/job/adobecom/cc-pink/main/publish/job-2024-09-21t13-38-15-348z'
             }
         }));
-        fetchMock.get('*', () => ({
+        fetch.get('*', () => ({
             progress: 'stopped',
             data: {
                 resources: [
